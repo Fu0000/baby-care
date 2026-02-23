@@ -393,7 +393,7 @@ export default function KickSession() {
       <div className="fixed bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white dark:from-[#1a1a2e] to-transparent pointer-events-none z-40" />
 
       {/* Floating stop button */}
-      <div className="fixed bottom-4 pwa:bottom-4 inset-x-0 z-50 px-6" style={{ paddingBottom: 'var(--safe-area-bottom)' }}>
+      <div className="fixed bottom-0 inset-x-0 z-50 px-6" style={{ paddingBottom: 'calc(var(--safe-area-bottom) + 1rem)' }}>
         <button
           onClick={handleEnd}
           className="w-full py-5 bg-duo-red text-white text-xl font-extrabold rounded-2xl border-b-4 border-red-700 active:scale-95 transition-all"
