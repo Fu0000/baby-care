@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-duo-green: #58CC02;
   --color-duo-green-dark: #46a302;
@@ -81,6 +83,12 @@ body {
 
 .animate-wiggle {
   animation: wiggle 0.5s ease-in-out;
+}
+
+/* Floating dock */
+.floating-dock {
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
 }
 
 /* Subtle card textures — faint dot grids */

@@ -12,36 +12,31 @@ const navItems = [
 export default function Layout() {
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-[#1a1a2e]">
-      <main className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(3.25rem + var(--safe-area-bottom))' }}>
+      <main className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(4.5rem + var(--safe-area-bottom))' }}>
         <Outlet />
       </main>
-      <nav
-        className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] border-t border-gray-200 dark:border-gray-700/60 z-50"
-        style={{ paddingBottom: 'var(--safe-area-bottom)' }}
-      >
-        <div className="flex justify-around items-center py-2 max-w-lg mx-auto w-full">
-          {navItems.map(({ to, label, Icon }) => (
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center" style={{ paddingBottom: 'calc(var(--safe-area-bottom) + 8px)' }}>
+        <nav className="floating-dock flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/80 dark:bg-[#16213e]/85 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/50">
+          {navItems.map(({ to, Icon }) => (
             <NavLink
               key={to}
               to={to}
+              end={to === '/'}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 px-4 py-1 text-xs transition-colors ${
+                `flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${
                   isActive
-                    ? 'text-duo-green font-bold'
-                    : 'text-gray-400 dark:text-gray-500'
+                    ? 'bg-duo-green/12 text-duo-green dark:bg-duo-green/20'
+                    : 'text-gray-400 dark:text-gray-500 active:scale-90'
                 }`
               }
             >
               {({ isActive }) => (
-                <>
-                  <Icon size={22} style={{ opacity: isActive ? 1 : 0.7 }} />
-                  <span>{label}</span>
-                </>
+                <Icon size={22} style={{ opacity: isActive ? 1 : 0.5 }} />
               )}
             </NavLink>
           ))}
-        </div>
-      </nav>
+        </nav>
+      </div>
     </div>
   )
 }
