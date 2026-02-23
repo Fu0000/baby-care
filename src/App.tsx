@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { Agentation } from 'agentation'
 import Home from './pages/Home.tsx'
 import History from './pages/History.tsx'
 import Settings from './pages/Settings.tsx'
@@ -10,6 +11,8 @@ import ContractionSession from './pages/tools/contraction-timer/ContractionSessi
 
 export default function App() {
   return (
+    <>
+    {import.meta.env.DEV && <Agentation />}
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
@@ -21,5 +24,6 @@ export default function App() {
       <Route path="/tools/kick-counter/session" element={<KickSession />} />
       <Route path="/tools/contraction-timer/session/:sessionId" element={<ContractionSession />} />
     </Routes>
+    </>
   )
 }
