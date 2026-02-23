@@ -53,12 +53,129 @@ When navigating away from sessions, use `navigate(path, { replace: true })` to p
 - No state management library — React hooks + local component state only
 - Dark mode via `.dark` class toggle on `<html>`, not system preference
 
-### Custom Theme
+### Design System
 
-Duolingo-inspired color palette defined in `src/index.css`:
-- Primary: `--color-duo-green: #58CC02`
-- Accents: `duo-orange`, `duo-blue`, `duo-purple`, `duo-red`, `duo-yellow`
-- Custom animations: `bounce-in`, `pulse-ring`, `float`, `slide-up`, `wiggle`
+Duolingo-inspired, flat, clean, and playful. Defined in `src/index.css` and applied via Tailwind utility classes throughout.
+
+#### Core Principles
+
+1. **No shadows** — Never use `shadow-*` classes on cards, containers, or buttons. The only exception is toggle switch thumbs (`shadow` on the circle).
+2. **Border-based contrast** — Use soft borders to define card edges: `border border-gray-200 dark:border-gray-700/60`. This gives subtle depth without shadows.
+3. **Bold typography** — Headlines use `font-extrabold`, labels use `font-bold`. The UI should feel confident and punchy.
+4. **Flat color fills** — Buttons and accents use solid Duo palette colors, never gradients (except the hero banner which uses a subtle green-to-transparent gradient).
+
+#### Color Palette (`src/index.css`)
+
+| Token              | Hex       | Usage                                   |
+|--------------------|-----------|------------------------------------------|
+| `duo-green`        | `#58CC02` | Primary actions, kick counter, active states |
+| `duo-green-dark`   | `#46a302` | Button bottom borders (pressed look)     |
+| `duo-orange`       | `#FF9600` | Streaks, contraction timer, warnings     |
+| `duo-blue`         | `#1CB0F6` | Export actions, informational accents     |
+| `duo-purple`       | `#CE82FF` | Due date, import actions                 |
+| `duo-red`          | `#FF4B4B` | Danger actions, stop buttons, alerts     |
+| `duo-yellow`       | `#FFC800` | Celebrations, highlights                 |
+| `duo-gray`         | `#E5E5E5` | Disabled states, separators              |
+
+#### Cards
+
+- Background: `bg-white dark:bg-[#16213e]`
+- Border: `border border-gray-200 dark:border-gray-700/60`
+- Radius: `rounded-2xl` (standard) or `rounded-3xl` (hero/featured)
+- Padding: `p-5` (standard) or `p-4` (compact lists)
+- No shadows ever
+
+#### Stat Chips (Home Page)
+
+Small cards with a colored top accent bar:
+```
+<div class="bg-white rounded-2xl overflow-hidden border border-gray-200">
+  <div class="h-[3px] bg-duo-{color}" />  <!-- colored accent bar -->
+  <div class="px-3 py-3 text-center">
+    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">LABEL</p>
+    <p class="text-xl font-extrabold">EMOJI + VALUE</p>
+  </div>
+</div>
+```
+
+#### Section Headers
+
+Uppercase, tiny, bold, gray — like Duolingo's "OVERVIEW" / "FRIEND STREAKS":
+```
+<p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+  SECTION NAME
+</p>
+```
+
+#### Primary Action Buttons (CTAs)
+
+Full-width, solid color, bottom border for depth (Duolingo-style pressed look):
+```
+<button class="w-full py-5 bg-duo-green text-white text-xl font-extrabold rounded-2xl border-b-4 border-duo-green-dark active:scale-95 transition-all">
+```
+- Green CTAs: `border-b-4 border-duo-green-dark`
+- Orange CTAs: `border-b-4 border-amber-600`
+- Red CTAs: `border-b-4 border-red-600`
+
+#### Tool Cards (Home Grid)
+
+Square aspect-ratio grid cards for tools:
+- Available: `bg-white border-2 border-gray-200 rounded-2xl` with centered emoji (40px) + centered bold title
+- Unavailable: `border-2 border-dashed border-gray-200 opacity-40` with "即将推出" badge
+- No colored borders on tool cards — keep them neutral white
+
+#### Grouped Lists (Duo "Friend Streaks" Pattern)
+
+Multiple items wrapped in a single bordered card with thin internal dividers:
+```
+<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+  {items.map((item, idx) => (
+    <div key={item.id}>
+      {idx > 0 && <div class="mx-4 border-t border-gray-100 dark:border-gray-700/40" />}
+      <div class="px-4 py-3.5">...row content...</div>
+    </div>
+  ))}
+</div>
+```
+Use this instead of individual bordered cards when showing a list of related items (session history, settings rows, etc.).
+
+#### Tab Switcher (Duo Style)
+
+Bottom-border accent on active tab, not a pill background:
+```
+<div class="flex border-b-2 border-gray-200 dark:border-gray-700/60">
+  <button class="flex-1 pb-3 text-sm font-bold uppercase tracking-wider text-duo-green relative">
+    Label
+    <span class="absolute bottom-0 left-0 right-0 h-[3px] bg-duo-green rounded-full -mb-[2px]" />
+  </button>
+</div>
+```
+
+#### Page Headers
+
+Bold, left-aligned, no emoji prefix:
+```
+<h1 class="text-2xl font-extrabold text-gray-800 dark:text-white">设置</h1>
+```
+
+#### Dark Mode Tokens
+
+| Element      | Light               | Dark                   |
+|-------------|----------------------|------------------------|
+| Page bg     | `bg-gray-50`         | `bg-[#1a1a2e]`        |
+| Card bg     | `bg-white`           | `bg-[#16213e]`        |
+| Card border | `border-gray-200`    | `border-gray-700/60`  |
+| Text primary| `text-gray-800`      | `text-white`           |
+| Text muted  | `text-gray-400`      | `text-gray-500`        |
+| Input bg    | `bg-gray-100`        | `bg-gray-800`          |
+
+#### Animations (`src/index.css`)
+
+- `animate-bounce-in` — entry pop for celebrations
+- `animate-pulse-ring` — pulsing ring on active recording
+- `animate-float` — gentle up/down float for mascot
+- `animate-slide-up` — content reveal from below
+- `animate-wiggle` — playful wiggle for attention
 
 ### Business Logic
 

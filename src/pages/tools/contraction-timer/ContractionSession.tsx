@@ -240,14 +240,14 @@ export default function ContractionSession() {
         {!active ? (
           <button
             onClick={handleStartContraction}
-            className="w-full py-5 bg-duo-orange hover:bg-duo-orange/90 active:scale-95 text-white text-xl font-extrabold rounded-2xl shadow-lg shadow-duo-orange/30 transition-all duration-150"
+            className="w-full py-5 bg-duo-orange hover:bg-duo-orange/90 active:scale-95 text-white text-xl font-extrabold rounded-2xl border-b-4 border-amber-600 transition-all duration-150"
           >
             开始宫缩 💪
           </button>
         ) : (
           <button
             onClick={handleEndContraction}
-            className="w-full py-5 bg-duo-red hover:bg-duo-red/90 active:scale-95 text-white text-xl font-extrabold rounded-2xl shadow-lg shadow-duo-red/30 transition-all duration-150"
+            className="w-full py-5 bg-duo-red hover:bg-duo-red/90 active:scale-95 text-white text-xl font-extrabold rounded-2xl border-b-4 border-red-600 transition-all duration-150"
           >
             宫缩结束 ✋
           </button>

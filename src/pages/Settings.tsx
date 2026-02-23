@@ -71,13 +71,17 @@ export default function Settings() {
 
   return (
     <div className="px-4 pt-8 pb-4">
-      <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white mb-6">
-        ⚙️ 设置
+      <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white mb-8">
+        设置
       </h1>
 
-      <div className="space-y-4">
+      {/* Kick Settings Section */}
+      <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+        胎动设置
+      </p>
+      <div className="space-y-3 mb-8">
         {/* Due Date */}
-        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-4">
+        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-gray-800 dark:text-white">预产期</p>
@@ -101,7 +105,7 @@ export default function Settings() {
         </div>
 
         {/* Goal Count */}
-        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-4">
+        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
           <label className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-gray-800 dark:text-white">胎动目标次数</p>
@@ -128,7 +132,7 @@ export default function Settings() {
         </div>
 
         {/* Merge Window */}
-        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-4">
+        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
           <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">
             合并窗口时长
           </p>
@@ -140,7 +144,7 @@ export default function Settings() {
               <button
                 key={minutes}
                 onClick={() => update({ mergeWindowMinutes: minutes })}
-                className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${
                   settings.mergeWindowMinutes === minutes
                     ? 'bg-duo-green text-white'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
@@ -151,9 +155,14 @@ export default function Settings() {
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Dark Mode */}
-        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-4">
+      {/* Appearance Section */}
+      <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+        外观
+      </p>
+      <div className="space-y-3 mb-8">
+        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
           <label className="flex items-center justify-between cursor-pointer">
             <div>
               <p className="text-sm font-bold text-gray-800 dark:text-white">深色模式</p>
@@ -173,11 +182,14 @@ export default function Settings() {
             </button>
           </label>
         </div>
+      </div>
 
-        {/* Data Management */}
-        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-4 space-y-3">
-          <p className="text-sm font-bold text-gray-800 dark:text-white">数据管理</p>
-
+      {/* Data Management Section */}
+      <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+        数据管理
+      </p>
+      <div className="space-y-3 mb-8">
+        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60 space-y-3">
           <button
             onClick={handleExport}
             className="w-full py-3 bg-duo-blue/10 text-duo-blue font-bold text-sm rounded-xl hover:bg-duo-blue/20 transition-colors"
@@ -191,7 +203,15 @@ export default function Settings() {
           >
             📥 导入数据
           </button>
+        </div>
+      </div>
 
+      {/* Danger Zone */}
+      <p className="text-[11px] font-bold text-duo-red/60 uppercase tracking-wider mb-3">
+        危险操作
+      </p>
+      <div className="space-y-3 mb-8">
+        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-duo-red/20 dark:border-duo-red/15">
           <button
             onClick={handleClear}
             className={`w-full py-3 font-bold text-sm rounded-xl transition-colors ${
@@ -203,17 +223,20 @@ export default function Settings() {
             {clearConfirm ? '⚠️ 确认清除所有数据？再点一次确认' : '🗑️ 清除所有数据'}
           </button>
         </div>
+      </div>
 
-        {/* About */}
-        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-4">
-          <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">关于</p>
-          <p className="text-xs text-gray-400">
-            宝宝助手 v2.0 · 为准妈妈用心打造
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            本应用仅为记录工具，不提供医学建议。
-          </p>
-        </div>
+      {/* About Section */}
+      <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+        关于
+      </p>
+      <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
+        <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">宝宝助手</p>
+        <p className="text-xs text-gray-400">
+          v2.0 · 为准妈妈用心打造
+        </p>
+        <p className="text-xs text-gray-400 mt-1">
+          本应用仅为记录工具，不提供医学建议。
+        </p>
       </div>
     </div>
   )

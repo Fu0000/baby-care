@@ -78,7 +78,7 @@ export default function ContractionHome() {
       {activeSession && (
         <button
           onClick={() => resumeSession(activeSession.id)}
-          className="w-full py-4 bg-duo-orange hover:bg-duo-orange/90 active:scale-95 text-white text-lg font-extrabold rounded-2xl shadow-lg shadow-duo-orange/30 transition-all duration-150 mb-4 animate-pulse"
+          className="w-full py-4 bg-duo-orange hover:bg-duo-orange/90 active:scale-95 text-white text-lg font-extrabold rounded-2xl border-b-4 border-amber-600 transition-all duration-150 mb-4 animate-pulse"
         >
           继续当前记录 ({activeSession.contractionCount} 次宫缩)
         </button>
@@ -87,7 +87,7 @@ export default function ContractionHome() {
       {/* Start Button */}
       <button
         onClick={startNewSession}
-        className="w-full py-5 bg-duo-orange hover:bg-duo-orange/90 active:scale-95 text-white text-xl font-extrabold rounded-2xl shadow-lg shadow-duo-orange/30 transition-all duration-150 mb-6"
+        className="w-full py-5 bg-duo-orange hover:bg-duo-orange/90 active:scale-95 text-white text-xl font-extrabold rounded-2xl border-b-4 border-amber-600 transition-all duration-150 mb-6"
       >
         开始新记录 ⏱️
       </button>
@@ -114,7 +114,7 @@ export default function ContractionHome() {
                   <button
                     key={session.id}
                     onClick={() => session.endedAt === null ? resumeSession(session.id) : undefined}
-                    className="w-full bg-white dark:bg-[#16213e] rounded-2xl p-4 flex items-center justify-between text-left"
+                    className="w-full bg-white dark:bg-[#16213e] rounded-2xl p-4 flex items-center justify-between text-left border border-gray-200 dark:border-gray-700/60"
                   >
                     <div>
                       <p className="text-sm font-bold text-gray-800 dark:text-white">

@@ -7,11 +7,7 @@ import { isSameDay } from '../lib/time.ts'
 interface ToolCard {
   id: string
   title: string
-  subtitle: string
   emoji: string
-  color: string
-  bgColor: string
-  shadowColor: string
   path: string
   available: boolean
 }
@@ -20,54 +16,55 @@ const tools: ToolCard[] = [
   {
     id: 'kick-counter',
     title: '数胎动',
-    subtitle: 'Cardiff Count-to-10',
     emoji: '🦶',
-    color: '#58CC02',
-    bgColor: 'bg-duo-green/10',
-    shadowColor: 'shadow-duo-green/20',
     path: '/tools/kick-counter',
     available: true,
   },
   {
     id: 'contraction-timer',
     title: '宫缩计时',
-    subtitle: '记录间隔与持续时间',
     emoji: '⏱️',
-    color: '#FF9600',
-    bgColor: 'bg-duo-orange/10',
-    shadowColor: 'shadow-duo-orange/20',
     path: '/tools/contraction-timer',
     available: true,
   },
   {
     id: 'hospital-bag',
     title: '待产包',
-    subtitle: '准备清单',
     emoji: '🎒',
-    color: '#1CB0F6',
-    bgColor: 'bg-duo-blue/10',
-    shadowColor: 'shadow-duo-blue/20',
     path: '/tools/hospital-bag',
     available: false,
   },
   {
     id: 'feeding-log',
     title: '喂奶记录',
-    subtitle: '哺乳追踪',
     emoji: '🍼',
-    color: '#CE82FF',
-    bgColor: 'bg-duo-purple/10',
-    shadowColor: 'shadow-duo-purple/20',
     path: '/tools/feeding-log',
     available: false,
   },
 ]
+
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 6) return '夜深了，注意休息哦'
+  if (hour < 9) return '早上好！新的一天开始啦'
+  if (hour < 12) return '上午好！今天感觉怎么样？'
+  if (hour < 14) return '中午好！记得吃饭哦'
+  if (hour < 18) return '下午好！宝宝活跃吗？'
+  return '晚上好！今天辛苦了'
+}
+
+function formatDueDate(days: number): string {
+  if (days > 0) return `${days}天`
+  if (days === 0) return '今天！'
+  return `+${Math.abs(days)}天`
+}
 
 export default function Home() {
   const navigate = useNavigate()
   const [todayKicks, setTodayKicks] = useState(0)
   const [streak, setStreak] = useState(0)
   const daysUntilDue = getDaysUntilDue()
+  const greeting = getGreeting()
 
   useEffect(() => {
     loadData()
@@ -94,102 +91,116 @@ export default function Home() {
   }
 
   return (
-    <div className="px-4 pt-10 pb-4">
-      {/* Header with mascot */}
-      <div className="text-center mb-6">
-        <img
-          src="/mascot.png"
-          alt="宝宝助手"
-          className="w-20 h-20 mx-auto mb-3 animate-float"
-        />
-        <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white">
-          宝宝助手
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          孕期全程陪伴
-        </p>
+    <div className="pb-4">
+      {/* Hero Banner */}
+      <div className="bg-gradient-to-b from-duo-green/15 to-transparent dark:from-duo-green/10 dark:to-transparent px-4 pt-8 pb-10">
+        <div className="flex flex-col items-center">
+          <div className="w-20 h-20 mb-3 rounded-full overflow-hidden ring-4 ring-duo-green/20 dark:ring-duo-green/15 animate-float">
+            <img
+              src="/mascot.png"
+              alt="宝宝助手"
+              className="w-full h-full object-cover scale-135"
+            />
+          </div>
+          <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white">
+            宝宝助手
+          </h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+            {greeting}
+          </p>
+        </div>
       </div>
 
-      {/* Due date countdown */}
-      {daysUntilDue !== null && (
-        <div className="bg-white dark:bg-[#16213e] rounded-3xl p-4 mb-5 shadow-sm animate-slide-up">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🤰</span>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">预产期倒计时</p>
-                <p className="text-2xl font-extrabold text-gray-800 dark:text-white">
-                  {daysUntilDue > 0 ? (
-                    <>{daysUntilDue} <span className="text-base font-normal text-gray-400">天</span></>
-                  ) : daysUntilDue === 0 ? (
-                    <span className="text-duo-orange">就是今天！</span>
-                  ) : (
-                    <span className="text-duo-red">已过 {Math.abs(daysUntilDue)} 天</span>
-                  )}
+      <div className="px-4 -mt-4">
+        {/* Overview Stats Row */}
+        <div className="mb-6">
+          <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+            概览
+          </p>
+          <div className="grid grid-cols-3 gap-2.5">
+            {/* Streak */}
+            <div className="bg-white dark:bg-[#16213e] rounded-2xl pt-0 overflow-hidden border border-gray-200 dark:border-gray-700/60">
+              <div className="h-[3px] bg-duo-orange" />
+              <div className="px-3 py-3 text-center">
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+                  连续天数
+                </p>
+                <p className="text-xl font-extrabold text-gray-800 dark:text-white">
+                  <span className="mr-0.5">🔥</span>{streak}
                 </p>
               </div>
             </div>
-            {daysUntilDue > 0 && (
-              <div className="text-right">
-                <p className="text-xs text-gray-400">约</p>
-                <p className="text-lg font-bold text-duo-purple">
-                  {Math.floor(daysUntilDue / 7)} 周
+
+            {/* Today Kicks */}
+            <div className="bg-white dark:bg-[#16213e] rounded-2xl pt-0 overflow-hidden border border-gray-200 dark:border-gray-700/60">
+              <div className="h-[3px] bg-duo-green" />
+              <div className="px-3 py-3 text-center">
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+                  今日胎动
+                </p>
+                <p className="text-xl font-extrabold text-gray-800 dark:text-white">
+                  <span className="mr-0.5">🦶</span>{todayKicks}
                 </p>
               </div>
-            )}
+            </div>
+
+            {/* Due Date */}
+            <div className="bg-white dark:bg-[#16213e] rounded-2xl pt-0 overflow-hidden border border-gray-200 dark:border-gray-700/60">
+              <div className="h-[3px] bg-duo-purple" />
+              <div className="px-3 py-3 text-center">
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+                  预产倒计时
+                </p>
+                <p className={`text-xl font-extrabold ${
+                  daysUntilDue !== null && daysUntilDue <= 0
+                    ? 'text-duo-orange'
+                    : 'text-gray-800 dark:text-white'
+                }`}>
+                  <span className="mr-0.5">📅</span>
+                  {daysUntilDue !== null ? formatDueDate(daysUntilDue) : '—'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Streak */}
-      {streak > 0 && (
-        <div className="flex items-center justify-center gap-2 mb-5">
-          <span className="text-duo-orange text-lg">🔥</span>
-          <span className="text-sm font-bold text-duo-orange">
-            连续 {streak} 天记录胎动！
-          </span>
+        {/* Tool Cards Grid */}
+        <div className="mb-6">
+          <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+            工具
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {tools.map(tool => (
+              <button
+                key={tool.id}
+                onClick={() => tool.available && navigate(tool.path)}
+                className={`relative rounded-2xl aspect-square flex flex-col items-center justify-center transition-all duration-150 ${
+                  tool.available
+                    ? 'bg-white dark:bg-[#16213e] border-2 border-gray-200 dark:border-gray-700/60 active:scale-95'
+                    : 'bg-gray-50 dark:bg-gray-800/30 border-2 border-dashed border-gray-200 dark:border-gray-700 opacity-40'
+                }`}
+              >
+                {!tool.available && (
+                  <div className="absolute top-2.5 right-3">
+                    <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">
+                      即将推出
+                    </span>
+                  </div>
+                )}
+                <span className="text-[40px] mb-2 leading-none">{tool.emoji}</span>
+                <p className="text-sm font-bold text-gray-800 dark:text-white">
+                  {tool.title}
+                </p>
+              </button>
+            ))}
+          </div>
         </div>
-      )}
 
-      {/* Quick stat */}
-      {todayKicks > 0 && (
-        <div className="flex items-center justify-center gap-2 mb-5 bg-duo-green/10 dark:bg-duo-green/5 rounded-2xl py-3">
-          <span className="text-sm text-duo-green font-bold">今日胎动: {todayKicks} 次 ✓</span>
-        </div>
-      )}
-
-      {/* Tool Cards Grid */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        {tools.map(tool => (
-          <button
-            key={tool.id}
-            onClick={() => tool.available && navigate(tool.path)}
-            className={`relative rounded-3xl p-5 text-left transition-all duration-150 shadow-sm ${
-              tool.available
-                ? `${tool.bgColor} active:scale-95 hover:shadow-md`
-                : 'bg-gray-100 dark:bg-gray-800/50 opacity-60'
-            }`}
-          >
-            {!tool.available && (
-              <div className="absolute top-3 right-3">
-                <span className="text-sm text-gray-400">🔒</span>
-              </div>
-            )}
-            <div className="text-3xl mb-3">{tool.emoji}</div>
-            <p className="text-sm font-extrabold text-gray-800 dark:text-white">
-              {tool.title}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {tool.available ? tool.subtitle : '即将推出'}
-            </p>
-          </button>
-        ))}
+        {/* Disclaimer */}
+        <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-6 mb-4 px-6">
+          本应用仅为记录工具，不提供医学建议。如有异常请咨询医生。
+        </p>
       </div>
-
-      {/* Disclaimer */}
-      <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-8 mb-4 px-6">
-        本应用仅为记录工具，不提供医学建议。如有异常请咨询医生。
-      </p>
     </div>
   )
 }

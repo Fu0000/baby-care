@@ -198,7 +198,7 @@ export default function KickSession() {
 
         <button
           onClick={handleCompletionDone}
-          className="w-full max-w-sm py-4 bg-duo-green text-white text-lg font-extrabold rounded-2xl shadow-lg shadow-duo-green/30 active:scale-95 transition-transform"
+          className="w-full max-w-sm py-4 bg-duo-green text-white text-lg font-extrabold rounded-2xl border-b-4 border-duo-green-dark active:scale-95 transition-transform"
         >
           完成 ✨
         </button>

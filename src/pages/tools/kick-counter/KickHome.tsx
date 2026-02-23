@@ -65,7 +65,7 @@ export default function KickHome() {
       )}
 
       {/* Today Summary */}
-      <div className="bg-white dark:bg-[#16213e] rounded-3xl p-5 shadow-sm mb-6">
+      <div className="bg-white dark:bg-[#16213e] rounded-3xl p-5 border border-gray-200 dark:border-gray-700/60 mb-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -99,7 +99,7 @@ export default function KickHome() {
       {/* Start Button */}
       <button
         onClick={() => navigate('/tools/kick-counter/session')}
-        className="w-full py-5 bg-duo-green hover:bg-duo-green-dark active:scale-95 text-white text-xl font-extrabold rounded-2xl shadow-lg shadow-duo-green/30 transition-all duration-150 mb-6"
+        className="w-full py-5 bg-duo-green hover:bg-duo-green-dark active:scale-95 text-white text-xl font-extrabold rounded-2xl border-b-4 border-duo-green-dark transition-all duration-150 mb-6"
       >
         开始数胎动 👆
       </button>
@@ -114,7 +114,7 @@ export default function KickHome() {
             {todaySessions.map(session => (
               <div
                 key={session.id}
-                className="bg-white dark:bg-[#16213e] rounded-2xl p-4 flex items-center justify-between"
+                className="bg-white dark:bg-[#16213e] rounded-2xl p-4 flex items-center justify-between border border-gray-200 dark:border-gray-700/60"
               >
                 <div>
                   <p className="text-sm font-bold text-gray-800 dark:text-white">
