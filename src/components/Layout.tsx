@@ -11,12 +11,15 @@ const navItems = [
 
 export default function Layout() {
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-[#1a1a2e]" style={{ paddingTop: 'var(--safe-area-top)' }}>
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-[#1a1a2e]">
       <main className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(3.25rem + var(--safe-area-bottom))' }}>
         <Outlet />
       </main>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] border-t border-gray-200 dark:border-gray-700/60 z-50 flex flex-col">
-        <div className="flex justify-around items-center py-2.5 max-w-lg mx-auto w-full">
+      <nav
+        className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] border-t border-gray-200 dark:border-gray-700/60 z-50"
+        style={{ paddingBottom: 'var(--safe-area-bottom)' }}
+      >
+        <div className="flex justify-around items-center py-2 max-w-lg mx-auto w-full">
           {navItems.map(({ to, label, Icon }) => (
             <NavLink
               key={to}
@@ -38,8 +41,6 @@ export default function Layout() {
             </NavLink>
           ))}
         </div>
-        {/* Safe area spacer — just background fill, no visual height */}
-        <div style={{ height: 'var(--safe-area-bottom)' }} />
       </nav>
     </div>
   )

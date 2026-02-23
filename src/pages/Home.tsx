@@ -100,7 +100,7 @@ export default function Home() {
   return (
     <div className="pb-4">
       {/* Hero Banner — full bleed */}
-      <div className="bg-gradient-to-b from-duo-green/15 to-transparent dark:from-duo-green/10 dark:to-transparent pt-8 pb-10">
+      <div className="bg-gradient-to-b from-duo-green/15 to-transparent dark:from-duo-green/10 dark:to-transparent pb-10" style={{ paddingTop: 'calc(var(--safe-area-top) + 2rem)' }}>
         <div className="flex flex-col items-center max-w-lg mx-auto px-4">
           <div className="w-20 h-20 mb-3 rounded-full overflow-hidden ring-4 ring-duo-green/20 dark:ring-duo-green/15 animate-float">
             <img

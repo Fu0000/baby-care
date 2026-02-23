@@ -61,7 +61,7 @@ export default function ContractionHome() {
   )
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-8 pb-4">
+    <div className="max-w-lg mx-auto px-4 pb-4" style={{ paddingTop: 'calc(var(--safe-area-top) + 2rem)' }}>
       {/* Header */}
       <div className="relative flex items-center justify-center mb-6">
         <button
