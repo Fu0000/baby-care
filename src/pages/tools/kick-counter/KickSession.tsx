@@ -1,178 +1,198 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import confetti from 'canvas-confetti'
-import { Dialog } from '@base-ui/react/dialog'
-import { Progress } from '@base-ui/react/progress'
-import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
-import { db, type Tap } from '../../../lib/db.ts'
-import { getSettings } from '../../../lib/settings.ts'
-import { formatDuration, formatShortDuration } from '../../../lib/time.ts'
-import { triggerHaptic } from '../../../lib/haptics.ts'
-import { getEncouragement } from '../../../lib/encouragements.ts'
-import { getRandomTip } from '../../../lib/tips.ts'
-import { Liveline } from 'liveline'
-import ProgressRing from '../../../components/ProgressRing.tsx'
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import confetti from "canvas-confetti";
+import { Dialog } from "@base-ui/react/dialog";
+import { Progress } from "@base-ui/react/progress";
+import { IconChildHeadOutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import { db, type Tap } from "../../../lib/db.ts";
+import { getSettings } from "../../../lib/settings.ts";
+import { formatDuration, formatShortDuration } from "../../../lib/time.ts";
+import { triggerHaptic } from "../../../lib/haptics.ts";
+import { getEncouragement } from "../../../lib/encouragements.ts";
+import { getRandomTip } from "../../../lib/tips.ts";
+import { Liveline } from "liveline";
+import ProgressRing from "../../../components/ProgressRing.tsx";
 
 export default function KickSession() {
-  const navigate = useNavigate()
-  const { sessionId } = useParams<{ sessionId: string }>()
-  const settings = getSettings()
-  const mergeWindowMs = settings.mergeWindowMinutes * 60 * 1000
+  const navigate = useNavigate();
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const settings = getSettings();
+  const mergeWindowMs = settings.mergeWindowMinutes * 60 * 1000;
 
-  const [loaded, setLoaded] = useState(false)
-  const [startedAt, setStartedAt] = useState(0)
-  const [taps, setTaps] = useState<Tap[]>([])
-  const [kickCount, setKickCount] = useState(0)
-  const [elapsed, setElapsed] = useState(0)
-  const [windowRemaining, setWindowRemaining] = useState(0)
-  const [windowActive, setWindowActive] = useState(false)
-  const [windowTapCount, setWindowTapCount] = useState(0)
-  const [encouragement, setEncouragement] = useState('')
-  const [showEncouragement, setShowEncouragement] = useState(false)
-  const [goalReached, setGoalReached] = useState(false)
-  const [showCompletion, setShowCompletion] = useState(false)
-  const [completionTip, setCompletionTip] = useState('')
+  const [loaded, setLoaded] = useState(false);
+  const [startedAt, setStartedAt] = useState(0);
+  const [taps, setTaps] = useState<Tap[]>([]);
+  const [kickCount, setKickCount] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [windowRemaining, setWindowRemaining] = useState(0);
+  const [windowActive, setWindowActive] = useState(false);
+  const [windowTapCount, setWindowTapCount] = useState(0);
+  const [encouragement, setEncouragement] = useState("");
+  const [showEncouragement, setShowEncouragement] = useState(false);
+  const [goalReached, setGoalReached] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [completionTip, setCompletionTip] = useState("");
 
-  const currentWindowId = useRef(0)
-  const windowStartTime = useRef(0)
-  const encourageTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const currentWindowId = useRef(0);
+  const windowStartTime = useRef(0);
+  const encourageTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const isDark = document.documentElement.classList.contains('dark')
+  const isDark = document.documentElement.classList.contains("dark");
   const chartData = useMemo(() => {
     const points: { time: number; value: number }[] = [
       { time: Math.floor(startedAt / 1000), value: 0 },
-    ]
-    let cumulative = 0
-    let lastWindowId = -1
+    ];
+    let cumulative = 0;
+    let lastWindowId = -1;
     for (const tap of taps) {
       if (tap.windowId !== lastWindowId) {
-        cumulative++
-        lastWindowId = tap.windowId
+        cumulative++;
+        lastWindowId = tap.windowId;
       }
-      points.push({ time: Math.floor(tap.timestamp / 1000), value: cumulative })
+      points.push({
+        time: Math.floor(tap.timestamp / 1000),
+        value: cumulative,
+      });
     }
-    return points
-  }, [taps, startedAt])
+    return points;
+  }, [taps, startedAt]);
 
   // Load session from DB on mount
   useEffect(() => {
-    if (!sessionId) return
-    db.sessions.get(sessionId).then(session => {
+    if (!sessionId) return;
+    db.sessions.get(sessionId).then((session) => {
       if (session) {
-        setStartedAt(session.startedAt)
-        setTaps(session.taps)
-        setKickCount(session.kickCount)
-        setGoalReached(session.goalReached)
+        setStartedAt(session.startedAt);
+        setTaps(session.taps);
+        setKickCount(session.kickCount);
+        setGoalReached(session.goalReached);
         // Restore merge window state from existing taps
         if (session.taps.length > 0) {
-          const maxWindowId = session.taps.reduce((max, t) => Math.max(max, t.windowId), 0)
-          currentWindowId.current = maxWindowId
-          const firstTapInWindow = session.taps.find(t => t.windowId === maxWindowId)
-          if (firstTapInWindow && Date.now() - firstTapInWindow.timestamp < mergeWindowMs) {
-            windowStartTime.current = firstTapInWindow.timestamp
-            setWindowActive(true)
-            setWindowTapCount(session.taps.filter(t => t.windowId === maxWindowId).length)
+          const maxWindowId = session.taps.reduce(
+            (max, t) => Math.max(max, t.windowId),
+            0,
+          );
+          currentWindowId.current = maxWindowId;
+          const firstTapInWindow = session.taps.find(
+            (t) => t.windowId === maxWindowId,
+          );
+          if (
+            firstTapInWindow &&
+            Date.now() - firstTapInWindow.timestamp < mergeWindowMs
+          ) {
+            windowStartTime.current = firstTapInWindow.timestamp;
+            setWindowActive(true);
+            setWindowTapCount(
+              session.taps.filter((t) => t.windowId === maxWindowId).length,
+            );
           }
         }
       }
-      setLoaded(true)
-    })
-  }, [sessionId])
+      setLoaded(true);
+    });
+  }, [sessionId]);
 
   // Elapsed timer
   useEffect(() => {
-    if (!loaded || startedAt === 0) return
+    if (!loaded || startedAt === 0) return;
     const interval = setInterval(() => {
-      setElapsed(Date.now() - startedAt)
-    }, 200)
-    return () => clearInterval(interval)
-  }, [loaded, startedAt])
+      setElapsed(Date.now() - startedAt);
+    }, 200);
+    return () => clearInterval(interval);
+  }, [loaded, startedAt]);
 
   // Window countdown timer
   useEffect(() => {
     const interval = setInterval(() => {
       if (windowActive && windowStartTime.current > 0) {
-        const remaining = mergeWindowMs - (Date.now() - windowStartTime.current)
+        const remaining =
+          mergeWindowMs - (Date.now() - windowStartTime.current);
         if (remaining <= 0) {
-          setWindowActive(false)
-          setWindowRemaining(0)
-          setWindowTapCount(0)
+          setWindowActive(false);
+          setWindowRemaining(0);
+          setWindowTapCount(0);
         } else {
-          setWindowRemaining(remaining)
+          setWindowRemaining(remaining);
         }
       }
-    }, 200)
-    return () => clearInterval(interval)
-  }, [windowActive, mergeWindowMs])
+    }, 200);
+    return () => clearInterval(interval);
+  }, [windowActive, mergeWindowMs]);
 
   // Save session to DB periodically
   useEffect(() => {
     const interval = setInterval(() => {
-      saveSession(false)
-    }, 5000)
-    return () => clearInterval(interval)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taps, kickCount])
+      saveSession(false);
+    }, 5000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taps, kickCount]);
 
-  const saveSession = useCallback(async (ended: boolean) => {
-    if (!sessionId) return
-    await db.sessions.put({
-      id: sessionId,
-      startedAt,
-      endedAt: ended ? Date.now() : null,
-      taps,
-      kickCount,
-      goalReached,
-    })
-  }, [sessionId, startedAt, taps, kickCount, goalReached])
+  const saveSession = useCallback(
+    async (ended: boolean) => {
+      if (!sessionId) return;
+      await db.sessions.put({
+        id: sessionId,
+        startedAt,
+        endedAt: ended ? Date.now() : null,
+        taps,
+        kickCount,
+        goalReached,
+      });
+    },
+    [sessionId, startedAt, taps, kickCount, goalReached],
+  );
 
   function handleTap() {
-    if (goalReached) return
+    if (goalReached) return;
 
-    triggerHaptic('medium')
-    const now = Date.now()
+    triggerHaptic("medium");
+    const now = Date.now();
 
-    let newKickCount = kickCount
+    let newKickCount = kickCount;
 
     if (!windowActive) {
       // Start new merge window
-      currentWindowId.current += 1
-      windowStartTime.current = now
-      setWindowActive(true)
-      newKickCount = kickCount + 1
-      setKickCount(newKickCount)
-      setWindowTapCount(1)
+      currentWindowId.current += 1;
+      windowStartTime.current = now;
+      setWindowActive(true);
+      newKickCount = kickCount + 1;
+      setKickCount(newKickCount);
+      setWindowTapCount(1);
     } else {
       // Within existing window - just count the tap
-      setWindowTapCount(prev => prev + 1)
+      setWindowTapCount((prev) => prev + 1);
     }
 
     const newTap: Tap = {
       timestamp: now,
       windowId: currentWindowId.current,
-    }
-    const newTaps = [...taps, newTap]
-    setTaps(newTaps)
+    };
+    const newTaps = [...taps, newTap];
+    setTaps(newTaps);
 
     // Show encouragement
-    setEncouragement(getEncouragement())
-    setShowEncouragement(true)
-    clearTimeout(encourageTimer.current)
-    encourageTimer.current = setTimeout(() => setShowEncouragement(false), 1500)
+    setEncouragement(getEncouragement());
+    setShowEncouragement(true);
+    clearTimeout(encourageTimer.current);
+    encourageTimer.current = setTimeout(
+      () => setShowEncouragement(false),
+      1500,
+    );
 
     // Check goal
     if (newKickCount >= settings.goalCount && !goalReached) {
-      setGoalReached(true)
-      setCompletionTip(getRandomTip())
-      triggerHaptic('heavy')
+      setGoalReached(true);
+      setCompletionTip(getRandomTip());
+      triggerHaptic("heavy");
 
       // Fire confetti
       confetti({
         particleCount: 150,
         spread: 80,
         origin: { y: 0.6 },
-        colors: ['#58CC02', '#FFC800', '#FF9600', '#CE82FF', '#1CB0F6'],
-      })
+        colors: ["#58CC02", "#FFC800", "#FF9600", "#CE82FF", "#1CB0F6"],
+      });
 
       setTimeout(() => {
         confetti({
@@ -180,49 +200,54 @@ export default function KickSession() {
           angle: 60,
           spread: 55,
           origin: { x: 0 },
-          colors: ['#58CC02', '#FFC800', '#FF9600'],
-        })
+          colors: ["#58CC02", "#FFC800", "#FF9600"],
+        });
         confetti({
           particleCount: 80,
           angle: 120,
           spread: 55,
           origin: { x: 1 },
-          colors: ['#CE82FF', '#1CB0F6', '#FF4B4B'],
-        })
-      }, 500)
+          colors: ["#CE82FF", "#1CB0F6", "#FF4B4B"],
+        });
+      }, 500);
 
-      setTimeout(() => setShowCompletion(true), 1200)
+      setTimeout(() => setShowCompletion(true), 1200);
     }
   }
 
   async function handleEnd() {
-    await saveSession(true)
-    navigate('/tools/kick-counter', { replace: true })
+    await saveSession(true);
+    navigate("/tools/kick-counter", { replace: true });
   }
 
   async function handleCompletionDone() {
-    await saveSession(true)
-    navigate('/tools/kick-counter', { replace: true })
+    await saveSession(true);
+    navigate("/tools/kick-counter", { replace: true });
   }
 
-  const progress = Math.min(kickCount / settings.goalCount, 1)
+  const progress = Math.min(kickCount / settings.goalCount, 1);
 
-  if (!loaded) return null
+  if (!loaded) return null;
 
   return (
-    <div className="fixed inset-0 bg-white dark:bg-[#1a1a2e] flex flex-col" style={{ paddingTop: 'var(--safe-area-top)' }}>
+    <div
+      className="fixed inset-0 bg-white dark:bg-[#1a1a2e] flex flex-col"
+      style={{ paddingTop: "var(--safe-area-top)" }}
+    >
       {/* Completion Dialog */}
       <Dialog.Root
         open={showCompletion}
         onOpenChange={(open) => {
-          if (!open) handleCompletionDone()
+          if (!open) handleCompletionDone();
         }}
       >
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 bg-white dark:bg-[#1a1a2e]" />
           <Dialog.Popup className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6 animate-bounce-in outline-none">
             <div className="text-6xl mb-4">🎉</div>
-            <Dialog.Title className="text-3xl font-extrabold text-duo-green mb-2">太棒了！</Dialog.Title>
+            <Dialog.Title className="text-3xl font-extrabold text-duo-green mb-2">
+              太棒了！
+            </Dialog.Title>
             <Dialog.Description className="text-center mb-8">
               <p className="text-lg text-gray-600 dark:text-gray-300 mb-2">
                 达到 {settings.goalCount} 次胎动目标！
@@ -236,11 +261,15 @@ export default function KickSession() {
             <div className="bg-gray-50 dark:bg-[#16213e] rounded-3xl p-6 w-full max-w-sm mb-6">
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-extrabold text-duo-green">{kickCount}</p>
+                  <p className="text-2xl font-extrabold text-duo-green">
+                    {kickCount}
+                  </p>
                   <p className="text-xs text-gray-400">有效胎动</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-extrabold text-duo-blue">{taps.length}</p>
+                  <p className="text-2xl font-extrabold text-duo-blue">
+                    {taps.length}
+                  </p>
                   <p className="text-xs text-gray-400">总点击数</p>
                 </div>
               </div>
@@ -251,8 +280,12 @@ export default function KickSession() {
               <div className="flex items-start gap-2">
                 <span className="text-lg">💡</span>
                 <div>
-                  <p className="text-xs font-bold text-duo-orange mb-1">小贴士</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">{completionTip}</p>
+                  <p className="text-xs font-bold text-duo-orange mb-1">
+                    小贴士
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {completionTip}
+                  </p>
                 </div>
               </div>
             </div>
@@ -272,15 +305,17 @@ export default function KickSession() {
         <div className="relative flex items-center justify-center">
           <button
             onClick={async () => {
-              await saveSession(false)
-              navigate('/tools/kick-counter', { replace: true })
+              await saveSession(false);
+              navigate("/tools/kick-counter", { replace: true });
             }}
             className="absolute left-0 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2 pr-2"
           >
             ← 返回
           </button>
           <div className="text-center">
-            <h1 className="text-xl font-extrabold text-gray-800 dark:text-white">数胎动</h1>
+            <h1 className="text-xl font-extrabold text-gray-800 dark:text-white">
+              数胎动
+            </h1>
             <p className="text-sm font-mono text-gray-400 dark:text-gray-500 mt-0.5">
               {formatDuration(elapsed)}
             </p>
@@ -314,7 +349,10 @@ export default function KickSession() {
           )}
           <ProgressRing progress={progress} size={220} strokeWidth={10}>
             <div className="flex flex-col items-center">
-              <IconChildHeadOutlineDuo18 size={48} className="mb-1 text-duo-green" />
+              <IconChildHeadOutlineDuo18
+                size={48}
+                className="mb-1 text-duo-green"
+              />
               <span className="text-4xl font-extrabold text-duo-green">
                 ×{kickCount}
               </span>
@@ -332,9 +370,9 @@ export default function KickSession() {
             data={chartData}
             value={kickCount}
             color="#58CC02"
-            theme={isDark ? 'dark' : 'light'}
-            referenceLine={{ value: settings.goalCount, label: '目标' }}
-            formatValue={(v) => Math.round(v) + ''}
+            theme={isDark ? "dark" : "light"}
+            referenceLine={{ value: settings.goalCount, label: "目标" }}
+            formatValue={(v) => Math.round(v) + ""}
             grid={false}
             fill
             scrub={false}
@@ -350,16 +388,20 @@ export default function KickSession() {
       {/* Bottom Info */}
       <div className="px-4 pb-28 mt-2">
         {/* Merge Window Status */}
-        <div className={`rounded-2xl p-4 mb-4 transition-colors ${
-          windowActive
-            ? 'bg-duo-green/10 dark:bg-duo-green/5'
-            : 'bg-gray-100 dark:bg-[#16213e]'
-        }`}>
+        <div
+          className={`rounded-2xl p-4 mb-4 transition-colors ${
+            windowActive
+              ? "bg-duo-green/10 dark:bg-duo-green/5"
+              : "bg-gray-100 dark:bg-[#16213e]"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${windowActive ? 'bg-duo-green' : 'bg-gray-300 dark:bg-gray-600'}`} />
+              <span
+                className={`w-2 h-2 rounded-full ${windowActive ? "bg-duo-green" : "bg-gray-300 dark:bg-gray-600"}`}
+              />
               <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                {windowActive ? '合并窗口 · 活跃中' : '等待点击'}
+                {windowActive ? "合并窗口 · 活跃中" : "等待点击"}
               </span>
             </div>
             {windowActive && (
@@ -376,7 +418,11 @@ export default function KickSession() {
         </div>
 
         {/* Progress Bar */}
-        <Progress.Root value={kickCount} max={settings.goalCount} className="flex items-center gap-3">
+        <Progress.Root
+          value={kickCount}
+          max={settings.goalCount}
+          className="flex items-center gap-3"
+        >
           <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
             目标 {settings.goalCount}
           </span>
@@ -393,7 +439,7 @@ export default function KickSession() {
       <div className="fixed bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white dark:from-[#1a1a2e] to-transparent pointer-events-none z-40" />
 
       {/* Floating stop button */}
-      <div className="fixed bottom-0 inset-x-0 z-50 px-6" style={{ paddingBottom: 'calc(var(--safe-area-bottom) + 1rem)' }}>
+      <div className="fixed bottom-0 inset-x-0 z-50 px-6 bottom-4 pwa:bottom-4">
         <button
           onClick={handleEnd}
           className="w-full py-5 bg-duo-red text-white text-xl font-extrabold rounded-2xl border-b-4 border-red-700 active:scale-95 transition-all"
@@ -402,5 +448,5 @@ export default function KickSession() {
         </button>
       </div>
     </div>
-  )
+  );
 }
