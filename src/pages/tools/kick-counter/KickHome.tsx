@@ -10,6 +10,7 @@ import TipBanner from '../../../components/TipBanner.tsx'
 export default function KickHome() {
   const navigate = useNavigate()
   const [todaySessions, setTodaySessions] = useState<KickSession[]>([])
+  const [activeSession, setActiveSession] = useState<KickSession | null>(null)
   const [streak, setStreak] = useState(0)
   const settings = getSettings()
 
@@ -21,6 +22,7 @@ export default function KickHome() {
     const sessions = await db.sessions.orderBy('startedAt').reverse().toArray()
     const today = sessions.filter(s => isSameDay(s.startedAt, Date.now()))
     setTodaySessions(today)
+    setActiveSession(sessions.find(s => s.endedAt === null) ?? null)
 
     // Calculate streak
     let currentStreak = 0
@@ -36,6 +38,19 @@ export default function KickHome() {
       }
     }
     setStreak(currentStreak)
+  }
+
+  async function startNewSession() {
+    const id = crypto.randomUUID()
+    await db.sessions.put({
+      id,
+      startedAt: Date.now(),
+      endedAt: null,
+      taps: [],
+      kickCount: 0,
+      goalReached: false,
+    })
+    navigate('/tools/kick-counter/session/' + id)
   }
 
   const todayKicks = todaySessions.reduce((sum, s) => sum + s.kickCount, 0)
@@ -99,9 +114,19 @@ export default function KickHome() {
         )}
       </div>
 
+      {/* Resume active session */}
+      {activeSession && (
+        <button
+          onClick={() => navigate('/tools/kick-counter/session/' + activeSession.id)}
+          className="w-full py-4 bg-duo-green hover:bg-duo-green-dark active:scale-95 text-white text-lg font-extrabold rounded-2xl border-b-4 border-duo-green-dark transition-all duration-150 mb-4 animate-pulse"
+        >
+          继续记录 ({activeSession.kickCount} 次胎动)
+        </button>
+      )}
+
       {/* Start Button */}
       <button
-        onClick={() => navigate('/tools/kick-counter/session')}
+        onClick={startNewSession}
         className="w-full py-5 bg-duo-green hover:bg-duo-green-dark active:scale-95 text-white text-xl font-extrabold rounded-2xl border-b-4 border-duo-green-dark transition-all duration-150 mb-6"
       >
         开始数胎动 🦶

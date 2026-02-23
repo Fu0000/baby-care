@@ -10,6 +10,9 @@ import KickSession from './pages/tools/kick-counter/KickSession.tsx'
 import ContractionHome from './pages/tools/contraction-timer/ContractionHome.tsx'
 import ContractionSession from './pages/tools/contraction-timer/ContractionSession.tsx'
 import HospitalBagHome from './pages/tools/hospital-bag/HospitalBagHome.tsx'
+import FeedingLogHome from './pages/tools/feeding-log/FeedingLogHome.tsx'
+import FeedingSession from './pages/tools/feeding-log/FeedingSession.tsx'
+import BottleEntry from './pages/tools/feeding-log/BottleEntry.tsx'
 
 export default function App() {
   return (
@@ -24,9 +27,12 @@ export default function App() {
         <Route path="/tools/kick-counter" element={<KickHome />} />
         <Route path="/tools/contraction-timer" element={<ContractionHome />} />
         <Route path="/tools/hospital-bag" element={<HospitalBagHome />} />
+        <Route path="/tools/feeding-log" element={<FeedingLogHome />} />
       </Route>
-      <Route path="/tools/kick-counter/session" element={<KickSession />} />
+      <Route path="/tools/kick-counter/session/:sessionId" element={<KickSession />} />
       <Route path="/tools/contraction-timer/session/:sessionId" element={<ContractionSession />} />
+      <Route path="/tools/feeding-log/session/:recordId" element={<FeedingSession />} />
+      <Route path="/tools/feeding-log/bottle" element={<BottleEntry />} />
     </Routes>
     </>
   )

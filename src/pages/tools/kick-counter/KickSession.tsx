@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import confetti from 'canvas-confetti'
 import { Dialog } from '@base-ui/react/dialog'
 import { Progress } from '@base-ui/react/progress'
@@ -10,15 +10,17 @@ import { formatDuration, formatShortDuration } from '../../../lib/time.ts'
 import { triggerHaptic } from '../../../lib/haptics.ts'
 import { getEncouragement } from '../../../lib/encouragements.ts'
 import { getRandomTip } from '../../../lib/tips.ts'
+import { Liveline } from 'liveline'
 import ProgressRing from '../../../components/ProgressRing.tsx'
 
 export default function KickSession() {
   const navigate = useNavigate()
+  const { sessionId } = useParams<{ sessionId: string }>()
   const settings = getSettings()
   const mergeWindowMs = settings.mergeWindowMinutes * 60 * 1000
 
-  const [sessionId] = useState(() => crypto.randomUUID())
-  const [startedAt] = useState(() => Date.now())
+  const [loaded, setLoaded] = useState(false)
+  const [startedAt, setStartedAt] = useState(0)
   const [taps, setTaps] = useState<Tap[]>([])
   const [kickCount, setKickCount] = useState(0)
   const [elapsed, setElapsed] = useState(0)
@@ -35,13 +37,56 @@ export default function KickSession() {
   const windowStartTime = useRef(0)
   const encourageTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
+  const isDark = document.documentElement.classList.contains('dark')
+  const chartData = useMemo(() => {
+    const points: { time: number; value: number }[] = [
+      { time: Math.floor(startedAt / 1000), value: 0 },
+    ]
+    let cumulative = 0
+    let lastWindowId = -1
+    for (const tap of taps) {
+      if (tap.windowId !== lastWindowId) {
+        cumulative++
+        lastWindowId = tap.windowId
+      }
+      points.push({ time: Math.floor(tap.timestamp / 1000), value: cumulative })
+    }
+    return points
+  }, [taps, startedAt])
+
+  // Load session from DB on mount
+  useEffect(() => {
+    if (!sessionId) return
+    db.sessions.get(sessionId).then(session => {
+      if (session) {
+        setStartedAt(session.startedAt)
+        setTaps(session.taps)
+        setKickCount(session.kickCount)
+        setGoalReached(session.goalReached)
+        // Restore merge window state from existing taps
+        if (session.taps.length > 0) {
+          const maxWindowId = session.taps.reduce((max, t) => Math.max(max, t.windowId), 0)
+          currentWindowId.current = maxWindowId
+          const firstTapInWindow = session.taps.find(t => t.windowId === maxWindowId)
+          if (firstTapInWindow && Date.now() - firstTapInWindow.timestamp < mergeWindowMs) {
+            windowStartTime.current = firstTapInWindow.timestamp
+            setWindowActive(true)
+            setWindowTapCount(session.taps.filter(t => t.windowId === maxWindowId).length)
+          }
+        }
+      }
+      setLoaded(true)
+    })
+  }, [sessionId])
+
   // Elapsed timer
   useEffect(() => {
+    if (!loaded || startedAt === 0) return
     const interval = setInterval(() => {
       setElapsed(Date.now() - startedAt)
     }, 200)
     return () => clearInterval(interval)
-  }, [startedAt])
+  }, [loaded, startedAt])
 
   // Window countdown timer
   useEffect(() => {
@@ -70,6 +115,7 @@ export default function KickSession() {
   }, [taps, kickCount])
 
   const saveSession = useCallback(async (ended: boolean) => {
+    if (!sessionId) return
     await db.sessions.put({
       id: sessionId,
       startedAt,
@@ -161,6 +207,8 @@ export default function KickSession() {
 
   const progress = Math.min(kickCount / settings.goalCount, 1)
 
+  if (!loaded) return null
+
   return (
     <div className="fixed inset-0 bg-white dark:bg-[#1a1a2e] flex flex-col" style={{ paddingTop: 'var(--safe-area-top)' }}>
       {/* Completion Dialog */}
@@ -220,20 +268,27 @@ export default function KickSession() {
       </Dialog.Root>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <button
-          onClick={handleEnd}
-          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2 px-3"
-        >
-          ← 返回
-        </button>
-        <div className="text-center">
-          <p className="text-xs text-gray-400">已用时间</p>
-          <p className="text-lg font-mono font-bold text-gray-800 dark:text-white">
-            {formatDuration(elapsed)}
-          </p>
+      <div className="px-4 py-3">
+        <div className="relative flex items-center justify-center">
+          <button
+            onClick={async () => {
+              await saveSession(false)
+              navigate('/tools/kick-counter', { replace: true })
+            }}
+            className="absolute left-0 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2 pr-2"
+          >
+            ← 返回
+          </button>
+          <div className="text-center">
+            <h1 className="text-xl font-extrabold text-gray-800 dark:text-white">数胎动</h1>
+            <p className="text-sm font-mono text-gray-400 dark:text-gray-500 mt-0.5">
+              {formatDuration(elapsed)}
+            </p>
+          </div>
         </div>
-        <div className="w-16" />
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-1">
+          随时离开，稍后继续
+        </p>
       </div>
 
       {/* Main Tap Area */}
@@ -270,10 +325,30 @@ export default function KickSession() {
         <p className="text-sm text-gray-400 dark:text-gray-500 mt-4">
           点击记录胎动
         </p>
+
+        {/* Live kick timeline */}
+        <div className="w-full px-2 mt-2 mb-0" style={{ height: 100 }}>
+          <Liveline
+            data={chartData}
+            value={kickCount}
+            color="#58CC02"
+            theme={isDark ? 'dark' : 'light'}
+            referenceLine={{ value: settings.goalCount, label: '目标' }}
+            formatValue={(v) => Math.round(v) + ''}
+            grid={false}
+            fill
+            scrub={false}
+            badge={false}
+            pulse={false}
+            momentum={false}
+            exaggerate
+            padding={{ top: 8, right: 12, bottom: 20, left: 12 }}
+          />
+        </div>
       </div>
 
       {/* Bottom Info */}
-      <div className="px-4 pb-6" style={{ paddingBottom: 'calc(var(--safe-area-bottom) + 1.5rem)' }}>
+      <div className="px-4 pb-28 mt-2">
         {/* Merge Window Status */}
         <div className={`rounded-2xl p-4 mb-4 transition-colors ${
           windowActive
@@ -312,11 +387,16 @@ export default function KickSession() {
             {kickCount}
           </span>
         </Progress.Root>
+      </div>
 
-        {/* End Button */}
+      {/* Gradient fade mask */}
+      <div className="fixed bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white dark:from-[#1a1a2e] to-transparent pointer-events-none z-40" />
+
+      {/* Floating stop button */}
+      <div className="fixed bottom-4 pwa:bottom-4 inset-x-0 z-50 px-6" style={{ paddingBottom: 'var(--safe-area-bottom)' }}>
         <button
           onClick={handleEnd}
-          className="w-full mt-4 py-3 border-2 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-[#16213e] transition-colors"
+          className="w-full py-5 bg-duo-red text-white text-xl font-extrabold rounded-2xl border-b-4 border-red-700 active:scale-95 transition-all"
         >
           结束记录
         </button>

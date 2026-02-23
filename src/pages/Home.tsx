@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconBagCheckOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
-import { db, type KickSession } from '../lib/db.ts'
+import { IconGlassFillDuo18 } from 'nucleo-ui-fill-duo-18'
+import { db, type KickSession, type FeedingRecord } from '../lib/db.ts'
 import { getDaysUntilDue, getWeeksPregnant } from '../lib/settings.ts'
 import { isSameDay } from '../lib/time.ts'
+import { formatTimeSinceLastFeed } from '../lib/feeding-helpers.ts'
 
 interface ToolCard {
   id: string
@@ -40,9 +42,9 @@ const allTools: ToolCard[] = [
   {
     id: 'feeding-log',
     title: '喂奶记录',
-    icon: <span className="text-[32px]">🍼</span>,
+    icon: <IconGlassFillDuo18 size={32} className="text-duo-purple" />,
     path: '/tools/feeding-log',
-    available: false,
+    available: true,
   },
 ]
 
@@ -85,6 +87,8 @@ export default function Home() {
   const navigate = useNavigate()
   const [todayKicks, setTodayKicks] = useState(0)
   const [streak, setStreak] = useState(0)
+  const [lastFeedAt, setLastFeedAt] = useState<number | null>(null)
+  const [activeKickSession, setActiveKickSession] = useState<KickSession | null>(null)
   const daysUntilDue = getDaysUntilDue()
   const weeksPregnant = getWeeksPregnant()
   const greeting = getGreeting()
@@ -98,6 +102,7 @@ export default function Home() {
     const sessions: KickSession[] = await db.sessions.orderBy('startedAt').reverse().toArray()
     const today = sessions.filter(s => isSameDay(s.startedAt, Date.now()))
     setTodayKicks(today.reduce((sum, s) => sum + s.kickCount, 0))
+    setActiveKickSession(sessions.find(s => s.endedAt === null) ?? null)
 
     let currentStreak = 0
     const now = Date.now()
@@ -112,6 +117,12 @@ export default function Home() {
       }
     }
     setStreak(currentStreak)
+
+    // Load last feeding
+    const feeds: FeedingRecord[] = await db.feedingRecords.orderBy('startedAt').reverse().limit(1).toArray()
+    if (feeds.length > 0) {
+      setLastFeedAt(feeds[0].startedAt)
+    }
   }
 
   return (
@@ -177,8 +188,40 @@ export default function Home() {
               <span className="text-sm font-extrabold text-duo-green">{todayKicks}</span>
               <span className="text-xs font-bold text-gray-500 dark:text-gray-400">今日胎动</span>
             </div>
+            {lastFeedAt && (
+              <div className="flex items-center gap-1.5 bg-duo-purple/10 dark:bg-duo-purple/15 rounded-full px-3.5 py-2">
+                <IconGlassFillDuo18 size={15} className="text-duo-purple" />
+                <span className="text-sm font-extrabold text-duo-purple">{formatTimeSinceLastFeed(lastFeedAt)}</span>
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400">距上次喂奶</span>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Active Kick Session Banner */}
+        {activeKickSession && (
+          <button
+            onClick={() => navigate('/tools/kick-counter/session/' + activeKickSession.id)}
+            className="w-full flex items-center gap-3 bg-duo-green/10 dark:bg-duo-green/15 rounded-2xl px-5 py-4 mb-6 active:scale-[0.98] transition-transform"
+          >
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-duo-green opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-duo-green" />
+            </span>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-bold text-gray-800 dark:text-white">
+                胎动记录中 · 点击继续
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                已记录 {activeKickSession.kickCount} 次胎动
+              </p>
+            </div>
+            <span className="text-xl font-extrabold text-duo-green">
+              {activeKickSession.kickCount}
+            </span>
+            <span className="text-gray-400 text-sm">→</span>
+          </button>
+        )}
 
         {/* Tool Cards Grid */}
         <div className="mb-6">

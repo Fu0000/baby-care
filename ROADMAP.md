@@ -26,10 +26,20 @@
 - [x] 预置常见物品，支持自定义添加
 - [x] 进度百分比显示
 
-## Phase 3: 喂奶记录
-- [ ] 左/右侧切换 + 计时
-- [ ] 喂奶间隔提醒（距上次 X 小时）
-- [ ] 历史记录 + 每日统计
+## Phase 3: 喂奶记录 ✅ COMPLETE
+- [x] 亲喂（左/右侧切换 + 计时）
+- [x] 奶瓶喂养（奶量快捷输入）
+- [x] 吸奶（计时 + 奶量记录）
+- [x] 喂奶间隔提醒（首页"距上次喂奶 X 小时"stat pill）
+- [x] 历史记录（History 第三 tab，按日分组）
+- [x] 数据导出/导入/清除支持
+
+## Phase 3.5: Liveline Charts (In Progress)
+- [x] History — Kick trend chart (daily totals, 7/30-day toggle, reference line)
+- [x] KickSession — Live kick timeline (real-time cumulative chart during session)
+- [ ] History — Contraction interval trend chart
+- [ ] Feeding log — Volume/duration trend chart
+- [ ] Home page — Mini weekly kick sparkline
 
 ## Phase 4: 换尿布 + 睡眠记录
 - [ ] 换尿布：便便类型/颜色快速选择
@@ -61,3 +71,5 @@
 - [x] Progressive blur sticky headers
 - [x] react-day-picker + sileo toasts integration
 - [x] Smart pregnancy-stage-aware tool ordering
+- [x] Hospital bag checklist (Phase 2)
+- [x] Feeding log: breast/bottle/pump with timer, volume entry, history tab (Phase 3)

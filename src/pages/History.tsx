@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Tabs } from '@base-ui/react/tabs'
 import { Collapsible } from '@base-ui/react/collapsible'
 import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
+import { IconGlassFillDuo18 } from 'nucleo-ui-fill-duo-18'
+import { Liveline } from 'liveline'
 import StickyHeader from '../components/StickyHeader.tsx'
-import { db, type KickSession, type ContractionSession, type Contraction } from '../lib/db.ts'
+import { db, type KickSession, type ContractionSession, type Contraction, type FeedingRecord } from '../lib/db.ts'
+import { getSettings } from '../lib/settings.ts'
 import { formatDate, formatTime, formatDuration, isSameDay } from '../lib/time.ts'
+import { getFeedingLabel, getFeedingEmoji, getFeedingColor, getFeedingBgColor, formatFeedingDuration } from '../lib/feeding-helpers.ts'
 
 function formatMs(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -16,9 +21,11 @@ function formatMs(ms: number): string {
 }
 
 export default function History() {
+  const navigate = useNavigate()
   const [kickSessions, setKickSessions] = useState<KickSession[]>([])
   const [contractionSessions, setContractionSessions] = useState<ContractionSession[]>([])
   const [contractions, setContractions] = useState<Record<string, Contraction[]>>({})
+  const [feedingRecords, setFeedingRecords] = useState<FeedingRecord[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [chartRange, setChartRange] = useState<7 | 30>(7)
   const [activeTab, setActiveTab] = useState<string | null>('kicks')
@@ -26,6 +33,7 @@ export default function History() {
   useEffect(() => {
     db.sessions.orderBy('startedAt').reverse().toArray().then(setKickSessions)
     db.contractionSessions.orderBy('startedAt').reverse().toArray().then(setContractionSessions)
+    db.feedingRecords.orderBy('startedAt').reverse().toArray().then(setFeedingRecords)
   }, [])
 
   async function loadContractions(sessionId: string) {
@@ -64,11 +72,28 @@ export default function History() {
     [],
   )
 
-  // Chart data for kicks
-  const chartData = getChartData(kickSessions, chartRange)
-  const maxKicks = Math.max(...chartData.map(d => d.kicks), 1)
+  // Feeding records grouped by date
+  const feedingGrouped = feedingRecords.reduce<{ date: string; ts: number; records: FeedingRecord[] }[]>(
+    (acc, record) => {
+      const dateStr = formatDate(record.startedAt)
+      const last = acc[acc.length - 1]
+      if (last && last.date === dateStr) {
+        last.records.push(record)
+      } else {
+        acc.push({ date: dateStr, ts: record.startedAt, records: [record] })
+      }
+      return acc
+    },
+    [],
+  )
 
-  const indicatorColor = activeTab === 'contractions' ? 'bg-duo-orange' : 'bg-duo-green'
+  // Chart data for kicks (Liveline)
+  const settings = getSettings()
+  const isDark = document.documentElement.classList.contains('dark')
+  const chartPoints = useMemo(() => getChartPoints(kickSessions, chartRange), [kickSessions, chartRange])
+  const todayKicks = chartPoints.length > 0 ? chartPoints[chartPoints.length - 1].value : 0
+
+  const indicatorColor = activeTab === 'contractions' ? 'bg-duo-orange' : activeTab === 'feeding' ? 'bg-duo-purple' : 'bg-duo-green'
 
   return (
     <div className="max-w-lg mx-auto pb-4">
@@ -93,6 +118,12 @@ export default function History() {
           >
             <IconTimer2OutlineDuo18 size={16} className="inline-block align-[-2px] mr-1" /> 宫缩
           </Tabs.Tab>
+          <Tabs.Tab
+            value="feeding"
+            className="flex-1 pb-3 text-sm font-bold uppercase tracking-wider transition-colors text-gray-400 data-[selected]:text-duo-purple outline-none cursor-pointer"
+          >
+            <IconGlassFillDuo18 size={16} className="inline-block align-[-2px] mr-1" /> 喂奶
+          </Tabs.Tab>
           <Tabs.Indicator className={`absolute bottom-0 left-[var(--active-tab-left)] h-[3px] w-[var(--active-tab-width)] rounded-full -mb-[1px] transition-all duration-200 ease-out ${indicatorColor}`} />
         </Tabs.List>
 
@@ -111,7 +142,7 @@ export default function History() {
                 胎动趋势
               </p>
               <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 mb-6 border border-gray-200 dark:border-gray-700/60">
-                <div className="flex items-center justify-end mb-4">
+                <div className="flex items-center justify-end mb-3">
                   <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5">
                     <button
                       onClick={() => setChartRange(7)}
@@ -135,27 +166,29 @@ export default function History() {
                     </button>
                   </div>
                 </div>
-                <div className="flex items-end gap-1 h-32">
-                  {chartData.map((d, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-[10px] text-gray-400 font-bold">
-                        {d.kicks > 0 ? d.kicks : ''}
-                      </span>
-                      <div
-                        className={`w-full rounded-t-lg transition-all duration-300 ${
-                          d.kicks > 0
-                            ? 'bg-duo-green'
-                            : 'bg-gray-200 dark:bg-gray-700'
-                        }`}
-                        style={{
-                          height: `${Math.max((d.kicks / maxKicks) * 80, d.kicks > 0 ? 8 : 4)}%`,
-                        }}
-                      />
-                      <span className="text-[10px] text-gray-400 truncate w-full text-center">
-                        {d.label}
-                      </span>
-                    </div>
-                  ))}
+                <div className="h-40">
+                  <Liveline
+                    data={chartPoints}
+                    value={todayKicks}
+                    color="#58CC02"
+                    theme={isDark ? 'dark' : 'light'}
+                    referenceLine={{ value: settings.goalCount, label: '目标 ' + settings.goalCount }}
+                    formatValue={(v) => Math.round(v) + ' 次'}
+                    formatTime={(t) => {
+                      const d = new Date(t * 1000)
+                      return chartRange <= 7
+                        ? ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()]
+                        : `${d.getMonth() + 1}/${d.getDate()}`
+                    }}
+                    window={chartRange * 86400}
+                    grid
+                    fill
+                    scrub
+                    exaggerate
+                    momentum={false}
+                    badge={false}
+                    pulse={false}
+                  />
                 </div>
               </div>
 
@@ -207,9 +240,21 @@ export default function History() {
                                 {session.kickCount}
                               </span>
                               {session.goalReached && <span>🎉</span>}
-                              <span className="text-gray-300 dark:text-gray-600 text-xs transition-transform duration-200 group-data-[panel-open]:rotate-180">
-                                {expandedId === session.id ? '▲' : '▼'}
-                              </span>
+                              {session.endedAt === null ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    navigate('/tools/kick-counter/session/' + session.id)
+                                  }}
+                                  className="text-xs font-bold text-duo-green"
+                                >
+                                  继续 →
+                                </button>
+                              ) : (
+                                <span className="text-gray-300 dark:text-gray-600 text-xs transition-transform duration-200 group-data-[panel-open]:rotate-180">
+                                  {expandedId === session.id ? '▲' : '▼'}
+                                </span>
+                              )}
                             </div>
                           </Collapsible.Trigger>
 
@@ -356,6 +401,76 @@ export default function History() {
             </>
           )}
         </Tabs.Panel>
+
+        {/* Feeding Tab */}
+        <Tabs.Panel value="feeding" className="outline-none">
+          {feedingRecords.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-5xl mb-4">📝</div>
+              <p className="text-gray-400 dark:text-gray-500 font-bold">还没有喂奶记录</p>
+              <p className="text-sm text-gray-400 dark:text-gray-600 mt-1">开始第一次喂奶记录吧！</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+                记录列表
+              </p>
+              <div className="space-y-6">
+                {feedingGrouped.map(group => (
+                  <div key={group.date}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-bold text-gray-800 dark:text-white">
+                        {isSameDay(group.ts, Date.now()) ? '今天' : group.date}
+                      </h3>
+                      <span className="text-xs font-bold text-gray-400 dark:text-gray-500">
+                        共 {group.records.length} 次
+                      </span>
+                    </div>
+                    <div className="bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+                      {group.records.map((record, idx) => (
+                        <div key={record.id}>
+                          {idx > 0 && (
+                            <div className="mx-4 border-t border-gray-100 dark:border-gray-700/40" />
+                          )}
+                          <div className="px-4 py-3.5 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className={`w-2 h-2 rounded-full ${getFeedingBgColor(record.type)}`} />
+                              <div>
+                                <p className="text-sm font-bold text-gray-800 dark:text-white">
+                                  {getFeedingEmoji(record.type)} {getFeedingLabel(record.type)}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  {formatTime(record.startedAt)}
+                                  {record.endedAt && record.startedAt !== record.endedAt && (
+                                    <span className="text-gray-400 font-normal">
+                                      {' → '}{formatTime(record.endedAt)}
+                                    </span>
+                                  )}
+                                  {record.duration ? ` · ${formatFeedingDuration(record.duration)}` : ''}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {record.volumeMl ? (
+                                <span className={`text-sm font-extrabold ${getFeedingColor(record.type)}`}>
+                                  {record.volumeMl}ml
+                                </span>
+                              ) : record.duration ? (
+                                <span className={`text-sm font-extrabold ${getFeedingColor(record.type)}`}>
+                                  {formatFeedingDuration(record.duration)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </Tabs.Panel>
       </Tabs.Root>
       </div>
     </div>
@@ -393,24 +508,17 @@ function getTimeline(session: KickSession): TimelineEvent[] {
   return events
 }
 
-function getChartData(sessions: KickSession[], days: number) {
-  const data: { label: string; kicks: number }[] = []
+function getChartPoints(sessions: KickSession[], days: number): { time: number; value: number }[] {
+  const points: { time: number; value: number }[] = []
   const now = Date.now()
   const dayMs = 86400000
 
   for (let i = days - 1; i >= 0; i--) {
     const dayStart = now - i * dayMs
-    const d = new Date(dayStart)
     const kicks = sessions
       .filter(s => isSameDay(s.startedAt, dayStart))
       .reduce((sum, s) => sum + s.kickCount, 0)
-
-    data.push({
-      label: days <= 7
-        ? ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
-        : `${d.getMonth() + 1}/${d.getDate()}`,
-      kicks,
-    })
+    points.push({ time: Math.floor(dayStart / 1000), value: kicks })
   }
-  return data
+  return points
 }
