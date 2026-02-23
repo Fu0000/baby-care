@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { RadioGroup } from '@base-ui/react/radio-group'
-import { Radio } from '@base-ui/react/radio'
+import { Toggle } from '@base-ui/react/toggle'
+import { ToggleGroup } from '@base-ui/react/toggle-group'
 import { NumberField } from '@base-ui/react/number-field'
 import { AlertDialog } from '@base-ui/react/alert-dialog'
+import StickyHeader from '../components/StickyHeader.tsx'
 import { getSettings, saveSettings, type Settings as SettingsType, type ColorMode } from '../lib/settings.ts'
 import { db } from '../lib/db.ts'
 
@@ -67,10 +68,13 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-4" style={{ paddingTop: 'calc(var(--safe-area-top) + 2rem)' }}>
-      <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white mb-8 text-center">
-        设置
-      </h1>
+    <div className="max-w-lg mx-auto pb-4">
+      <StickyHeader>
+        <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white text-center">
+          设置
+        </h1>
+      </StickyHeader>
+      <div className="px-4">
 
       {/* Kick Settings Section */}
       <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
@@ -138,27 +142,23 @@ export default function Settings() {
           <p className="text-xs text-gray-400 mb-3">
             窗口内的多次点击合并为 1 次有效胎动
           </p>
-          <RadioGroup
-            value={String(settings.mergeWindowMinutes)}
-            onValueChange={(val) => update({ mergeWindowMinutes: Number(val) })}
-            className="flex gap-2"
+          <ToggleGroup
+            value={[String(settings.mergeWindowMinutes)]}
+            onValueChange={(val) => {
+              if (val.length > 0) update({ mergeWindowMinutes: Number(val[0]) })
+            }}
+            className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5"
           >
             {[3, 5, 10].map(minutes => (
-              <label key={minutes} className="flex-1">
-                <Radio.Root
-                  value={String(minutes)}
-                  className="sr-only"
-                />
-                <span className={`block w-full py-2.5 rounded-xl text-sm font-bold text-center transition-colors cursor-pointer ${
-                  settings.mergeWindowMinutes === minutes
-                    ? 'bg-duo-green text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                }`}>
-                  {minutes} 分钟
-                </span>
-              </label>
+              <Toggle
+                key={minutes}
+                value={String(minutes)}
+                className="flex-1 py-2 rounded-[10px] text-sm font-bold text-center transition-colors cursor-pointer text-gray-500 dark:text-gray-400 data-[pressed]:bg-duo-green data-[pressed]:text-white"
+              >
+                {minutes} 分钟
+              </Toggle>
             ))}
-          </RadioGroup>
+          </ToggleGroup>
         </div>
       </div>
 
@@ -170,27 +170,23 @@ export default function Settings() {
         <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
           <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">外观模式</p>
           <p className="text-xs text-gray-400 mb-3">选择浅色、深色或跟随系统</p>
-          <RadioGroup
-            value={settings.colorMode}
-            onValueChange={(val) => update({ colorMode: val as ColorMode })}
-            className="flex gap-2"
+          <ToggleGroup
+            value={[settings.colorMode]}
+            onValueChange={(val) => {
+              if (val.length > 0) update({ colorMode: val[0] as ColorMode })
+            }}
+            className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5"
           >
             {([['system', '系统'], ['light', '浅色'], ['dark', '深色']] as const).map(([mode, label]) => (
-              <label key={mode} className="flex-1">
-                <Radio.Root
-                  value={mode}
-                  className="sr-only"
-                />
-                <span className={`block w-full py-2.5 rounded-xl text-sm font-bold text-center transition-colors cursor-pointer ${
-                  settings.colorMode === mode
-                    ? 'bg-duo-green text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                }`}>
-                  {label}
-                </span>
-              </label>
+              <Toggle
+                key={mode}
+                value={mode}
+                className="flex-1 py-2 rounded-[10px] text-sm font-bold text-center transition-colors cursor-pointer text-gray-500 dark:text-gray-400 data-[pressed]:bg-duo-green data-[pressed]:text-white"
+              >
+                {label}
+              </Toggle>
             ))}
-          </RadioGroup>
+          </ToggleGroup>
         </div>
       </div>
 
@@ -264,6 +260,7 @@ export default function Settings() {
         <p className="text-xs text-gray-400 mt-1">
           本应用仅为记录工具，不提供医学建议。
         </p>
+      </div>
       </div>
     </div>
   )

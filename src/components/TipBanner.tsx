@@ -16,12 +16,12 @@ export default function TipBanner() {
   if (!visible) return null
 
   return (
-    <div className="mx-4 mt-4 p-4 bg-duo-yellow/20 dark:bg-duo-yellow/10 rounded-2xl animate-slide-up">
+    <div className="mx-4 mt-4 p-4 bg-gray-100 dark:bg-gray-800/50 rounded-2xl animate-slide-up">
       <div className="flex items-start gap-2">
-        <span className="text-xl shrink-0">💡</span>
+        <span className="text-base shrink-0">💡</span>
         <div>
-          <p className="text-sm font-bold text-duo-orange mb-1">你知道吗？</p>
-          <p className="text-sm text-gray-700 dark:text-gray-300">{tip}</p>
+          <p className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-1">你知道吗？</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{tip}</p>
         </div>
         <button
           onClick={() => setVisible(false)}

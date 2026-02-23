@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
+import StickyHeader from '../../../components/StickyHeader.tsx'
 import { db, type ContractionSession } from '../../../lib/db.ts'
 import { formatDate, formatTime, isSameDay } from '../../../lib/time.ts'
 
@@ -61,19 +62,21 @@ export default function ContractionHome() {
   )
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-4" style={{ paddingTop: 'calc(var(--safe-area-top) + 2rem)' }}>
-      {/* Header */}
-      <div className="relative flex items-center justify-center mb-6">
-        <button
-          onClick={() => navigate('/')}
-          className="absolute left-0 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2 pr-2"
-        >
-          ← 返回
-        </button>
-        <h1 className="text-xl font-extrabold text-gray-800 dark:text-white">
-          宫缩计时
-        </h1>
-      </div>
+    <div className="max-w-lg mx-auto pb-4">
+      <StickyHeader>
+        <div className="relative flex items-center justify-center">
+          <button
+            onClick={() => navigate('/')}
+            className="absolute left-0 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2 pr-2"
+          >
+            ← 返回
+          </button>
+          <h1 className="text-xl font-extrabold text-gray-800 dark:text-white">
+            宫缩计时
+          </h1>
+        </div>
+      </StickyHeader>
+      <div className="px-4">
 
       {/* Resume active session */}
       {activeSession && (
@@ -158,6 +161,7 @@ export default function ContractionHome() {
           <p className="text-gray-400 dark:text-gray-500">还没有宫缩记录</p>
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -71,3 +71,11 @@ export function getDaysUntilDue(): number | null {
   due.setHours(0, 0, 0, 0)
   return Math.ceil((due.getTime() - now.getTime()) / 86400000)
 }
+
+/** Returns current pregnancy week (0-40+), or null if no due date set. */
+export function getWeeksPregnant(): number | null {
+  const days = getDaysUntilDue()
+  if (days === null) return null
+  // 40 weeks = 280 days total pregnancy
+  return Math.floor((280 - days) / 7)
+}

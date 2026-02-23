@@ -3,39 +3,35 @@ import { useNavigate } from 'react-router-dom'
 import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { db, type KickSession } from '../lib/db.ts'
-import { getDaysUntilDue } from '../lib/settings.ts'
+import { getDaysUntilDue, getWeeksPregnant } from '../lib/settings.ts'
 import { isSameDay } from '../lib/time.ts'
 
 interface ToolCard {
   id: string
   title: string
-  subtitle: string
   icon: ReactNode
   path: string
   available: boolean
 }
 
-const tools: ToolCard[] = [
+const allTools: ToolCard[] = [
   {
     id: 'kick-counter',
     title: '数胎动',
-    subtitle: 'Cardiff Count-to-10',
-    icon: <IconChildHeadOutlineDuo18 size={32} />,
+    icon: <IconChildHeadOutlineDuo18 size={32} className="text-duo-blue" />,
     path: '/tools/kick-counter',
     available: true,
   },
   {
     id: 'contraction-timer',
     title: '宫缩计时',
-    subtitle: '记录间隔与时长',
-    icon: <IconTimer2OutlineDuo18 size={32} />,
+    icon: <IconTimer2OutlineDuo18 size={32} className="text-pink-400" />,
     path: '/tools/contraction-timer',
     available: true,
   },
   {
     id: 'hospital-bag',
     title: '待产包',
-    subtitle: '准备清单',
     icon: <span className="text-[32px]">🎒</span>,
     path: '/tools/hospital-bag',
     available: false,
@@ -43,12 +39,30 @@ const tools: ToolCard[] = [
   {
     id: 'feeding-log',
     title: '喂奶记录',
-    subtitle: '哺乳追踪',
     icon: <span className="text-[32px]">🍼</span>,
     path: '/tools/feeding-log',
     available: false,
   },
 ]
+
+/** Reorder tools based on pregnancy stage:
+ *  - Before 28 weeks: contraction timer first
+ *  - 28 weeks → due date: kick counter first (prime time for counting)
+ *  - Past due date: contraction timer first (labor prep) */
+function getOrderedTools(): ToolCard[] {
+  const weeks = getWeeksPregnant()
+  const days = getDaysUntilDue()
+  // Default order or 28+ weeks before due date → kick counter first
+  if (weeks === null || (weeks >= 28 && days !== null && days > 0)) return allTools
+  // Before 28 weeks or past due date → contraction timer first
+  const reordered = [...allTools]
+  const ctIdx = reordered.findIndex(t => t.id === 'contraction-timer')
+  if (ctIdx > 0) {
+    const [ct] = reordered.splice(ctIdx, 1)
+    reordered.unshift(ct)
+  }
+  return reordered
+}
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -71,7 +85,9 @@ export default function Home() {
   const [todayKicks, setTodayKicks] = useState(0)
   const [streak, setStreak] = useState(0)
   const daysUntilDue = getDaysUntilDue()
+  const weeksPregnant = getWeeksPregnant()
   const greeting = getGreeting()
+  const tools = getOrderedTools()
 
   useEffect(() => {
     loadData()
@@ -124,32 +140,41 @@ export default function Home() {
           <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             概览
           </p>
-          <div className="bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 flex">
-            {/* Streak */}
-            <div className="flex-1 py-3.5 px-2 text-center">
-              <span className="text-base block mb-0.5">🔥</span>
-              <p className="text-lg font-extrabold text-duo-orange leading-none">{streak}</p>
-              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-wider">连续</p>
+          {/* Due date — featured pill */}
+          {daysUntilDue !== null && (
+            <div className={`flex items-center justify-between rounded-2xl px-5 py-3.5 mb-3 ${
+              daysUntilDue <= 0
+                ? 'bg-duo-orange/10 dark:bg-duo-orange/15'
+                : 'bg-duo-purple/10 dark:bg-duo-purple/15'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📅</span>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400">预产期倒计时</p>
+                  {weeksPregnant !== null && (
+                    <p className="text-[10px] font-bold mt-0.5 text-gray-400 dark:text-gray-500">
+                      孕 {weeksPregnant} 周
+                    </p>
+                  )}
+                </div>
+              </div>
+              <span className={`text-2xl font-extrabold ${daysUntilDue <= 0 ? 'text-duo-orange' : 'text-duo-purple'}`}>
+                {formatDueDate(daysUntilDue)}
+              </span>
             </div>
-            <div className="w-px bg-gray-100 dark:bg-gray-700/40 my-3" />
-            {/* Today Kicks */}
-            <div className="flex-1 py-3.5 px-2 text-center">
-              <IconChildHeadOutlineDuo18 size={18} className="mx-auto block mb-0.5 text-duo-green" />
-              <p className="text-lg font-extrabold text-duo-green leading-none">{todayKicks}</p>
-              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-wider">今日胎动</p>
+          )}
+
+          {/* Small stat pills */}
+          <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-1.5 bg-duo-orange/10 dark:bg-duo-orange/15 rounded-full px-3.5 py-2">
+              <span className="text-sm">🔥</span>
+              <span className="text-sm font-extrabold text-duo-orange">{streak}</span>
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">连续</span>
             </div>
-            <div className="w-px bg-gray-100 dark:bg-gray-700/40 my-3" />
-            {/* Due Date */}
-            <div className="flex-1 py-3.5 px-2 text-center">
-              <span className="text-base block mb-0.5">📅</span>
-              <p className={`text-lg font-extrabold leading-none ${
-                daysUntilDue !== null && daysUntilDue <= 0
-                  ? 'text-duo-orange'
-                  : 'text-duo-purple'
-              }`}>
-                {daysUntilDue !== null ? formatDueDate(daysUntilDue) : '—'}
-              </p>
-              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-wider">预产期</p>
+            <div className="flex items-center gap-1.5 bg-duo-green/10 dark:bg-duo-green/15 rounded-full px-3.5 py-2">
+              <IconChildHeadOutlineDuo18 size={15} className="text-duo-green" />
+              <span className="text-sm font-extrabold text-duo-green">{todayKicks}</span>
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">今日胎动</span>
             </div>
           </div>
         </div>
@@ -175,12 +200,9 @@ export default function Home() {
                     即将推出
                   </span>
                 )}
-                <div className="mb-2 text-gray-600 dark:text-gray-300">{tool.icon}</div>
+                <div className="mb-2">{tool.icon}</div>
                 <p className="text-sm font-bold text-gray-800 dark:text-white">
                   {tool.title}
-                </p>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                  {tool.subtitle}
                 </p>
               </button>
             ))}

@@ -3,6 +3,7 @@ import { Tabs } from '@base-ui/react/tabs'
 import { Collapsible } from '@base-ui/react/collapsible'
 import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
+import StickyHeader from '../components/StickyHeader.tsx'
 import { db, type KickSession, type ContractionSession, type Contraction } from '../lib/db.ts'
 import { formatDate, formatTime, formatDuration, isSameDay } from '../lib/time.ts'
 
@@ -70,11 +71,13 @@ export default function History() {
   const indicatorColor = activeTab === 'contractions' ? 'bg-duo-orange' : 'bg-duo-green'
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-4" style={{ paddingTop: 'calc(var(--safe-area-top) + 2rem)' }}>
-      <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white mb-6 text-center">
-        记录
-      </h1>
-
+    <div className="max-w-lg mx-auto pb-4">
+      <StickyHeader>
+        <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white text-center">
+          记录
+        </h1>
+      </StickyHeader>
+      <div className="px-4">
       <Tabs.Root defaultValue="kicks" onValueChange={setActiveTab}>
         {/* Tab Switcher — Duo style with bottom border accent */}
         <Tabs.List className="relative flex border-b-2 border-gray-200 dark:border-gray-700/60 mb-6">
@@ -354,6 +357,7 @@ export default function History() {
           )}
         </Tabs.Panel>
       </Tabs.Root>
+      </div>
     </div>
   )
 }
