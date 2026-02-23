@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
+import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { db, type KickSession, type ContractionSession, type Contraction } from '../lib/db.ts'
 import { formatDate, formatTime, formatDuration, isSameDay } from '../lib/time.ts'
 
@@ -67,7 +69,7 @@ export default function History() {
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-8 pb-4">
-      <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white mb-6">
+      <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white mb-6 text-center">
         记录
       </h1>
 
@@ -81,7 +83,7 @@ export default function History() {
               : 'text-gray-400'
           }`}
         >
-          🦶 胎动
+          <IconChildHeadOutlineDuo18 size={16} className="inline-block align-[-2px] mr-1" /> 胎动
           {tab === 'kicks' && (
             <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-duo-green rounded-full -mb-[2px]" />
           )}
@@ -94,7 +96,7 @@ export default function History() {
               : 'text-gray-400'
           }`}
         >
-          ⏱️ 宫缩
+          <IconTimer2OutlineDuo18 size={16} className="inline-block align-[-2px] mr-1" /> 宫缩
           {tab === 'contractions' && (
             <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-duo-orange rounded-full -mb-[2px]" />
           )}

@@ -82,3 +82,26 @@ body {
 .animate-wiggle {
   animation: wiggle 0.5s ease-in-out;
 }
+
+/* Subtle card textures — faint dot grids */
+.texture-dots {
+  background-image: radial-gradient(circle, currentColor 0.5px, transparent 0.5px);
+  background-size: 12px 12px;
+}
+
+.texture-grid {
+  background-image:
+    linear-gradient(currentColor 0.5px, transparent 0.5px),
+    linear-gradient(90deg, currentColor 0.5px, transparent 0.5px);
+  background-size: 16px 16px;
+}
+
+.texture-diagonal {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    currentColor,
+    currentColor 0.5px,
+    transparent 0.5px,
+    transparent 8px
+  );
+}

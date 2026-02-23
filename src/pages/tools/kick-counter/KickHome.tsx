@@ -42,15 +42,15 @@ export default function KickHome() {
   return (
     <div className="max-w-lg mx-auto px-4 pt-8">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="relative flex items-center justify-center mb-4">
         <button
           onClick={() => navigate('/')}
-          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2 pr-2"
+          className="absolute left-0 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2 pr-2"
         >
           ← 返回
         </button>
         <h1 className="text-xl font-extrabold text-gray-800 dark:text-white">
-          🦶 数胎动
+          数胎动
         </h1>
       </div>
 

@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
+import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { db, type KickSession } from '../lib/db.ts'
 import { getDaysUntilDue } from '../lib/settings.ts'
 import { isSameDay } from '../lib/time.ts'
@@ -7,7 +9,8 @@ import { isSameDay } from '../lib/time.ts'
 interface ToolCard {
   id: string
   title: string
-  emoji: string
+  subtitle: string
+  icon: ReactNode
   path: string
   available: boolean
 }
@@ -16,28 +19,32 @@ const tools: ToolCard[] = [
   {
     id: 'kick-counter',
     title: '数胎动',
-    emoji: '🦶',
+    subtitle: 'Cardiff Count-to-10',
+    icon: <IconChildHeadOutlineDuo18 size={32} />,
     path: '/tools/kick-counter',
     available: true,
   },
   {
     id: 'contraction-timer',
     title: '宫缩计时',
-    emoji: '⏱️',
+    subtitle: '记录间隔与时长',
+    icon: <IconTimer2OutlineDuo18 size={32} />,
     path: '/tools/contraction-timer',
     available: true,
   },
   {
     id: 'hospital-bag',
     title: '待产包',
-    emoji: '🎒',
+    subtitle: '准备清单',
+    icon: <span className="text-[32px]">🎒</span>,
     path: '/tools/hospital-bag',
     available: false,
   },
   {
     id: 'feeding-log',
     title: '喂奶记录',
-    emoji: '🍼',
+    subtitle: '哺乳追踪',
+    icon: <span className="text-[32px]">🍼</span>,
     path: '/tools/feeding-log',
     available: false,
   },
@@ -112,43 +119,37 @@ export default function Home() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 -mt-4">
-        {/* Overview Stats — single grouped card */}
+        {/* Overview Stats — single panel with 3 columns */}
         <div className="mb-6">
           <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             概览
           </p>
-          <div className="bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 flex">
             {/* Streak */}
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">🔥</span>
-                <span className="text-sm font-bold text-gray-800 dark:text-white">连续天数</span>
-              </div>
-              <span className="text-xl font-extrabold text-duo-orange">{streak}</span>
+            <div className="flex-1 py-3.5 px-2 text-center">
+              <span className="text-base block mb-0.5">🔥</span>
+              <p className="text-lg font-extrabold text-duo-orange leading-none">{streak}</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-wider">连续</p>
             </div>
-            <div className="mx-4 border-t border-gray-100 dark:border-gray-700/40" />
+            <div className="w-px bg-gray-100 dark:bg-gray-700/40 my-3" />
             {/* Today Kicks */}
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">🦶</span>
-                <span className="text-sm font-bold text-gray-800 dark:text-white">今日胎动</span>
-              </div>
-              <span className="text-xl font-extrabold text-duo-green">{todayKicks}</span>
+            <div className="flex-1 py-3.5 px-2 text-center">
+              <IconChildHeadOutlineDuo18 size={18} className="mx-auto block mb-0.5 text-duo-green" />
+              <p className="text-lg font-extrabold text-duo-green leading-none">{todayKicks}</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-wider">今日胎动</p>
             </div>
-            <div className="mx-4 border-t border-gray-100 dark:border-gray-700/40" />
+            <div className="w-px bg-gray-100 dark:bg-gray-700/40 my-3" />
             {/* Due Date */}
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">📅</span>
-                <span className="text-sm font-bold text-gray-800 dark:text-white">预产倒计时</span>
-              </div>
-              <span className={`text-xl font-extrabold ${
+            <div className="flex-1 py-3.5 px-2 text-center">
+              <span className="text-base block mb-0.5">📅</span>
+              <p className={`text-lg font-extrabold leading-none ${
                 daysUntilDue !== null && daysUntilDue <= 0
                   ? 'text-duo-orange'
                   : 'text-duo-purple'
               }`}>
                 {daysUntilDue !== null ? formatDueDate(daysUntilDue) : '—'}
-              </span>
+              </p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-wider">预产期</p>
             </div>
           </div>
         </div>
@@ -158,27 +159,28 @@ export default function Home() {
           <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             工具
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             {tools.map(tool => (
               <button
                 key={tool.id}
                 onClick={() => tool.available && navigate(tool.path)}
-                className={`relative rounded-2xl aspect-square flex flex-col items-center justify-center transition-all duration-150 ${
+                className={`rounded-2xl py-5 px-4 flex flex-col items-center justify-center text-center transition-all duration-150 ${
                   tool.available
-                    ? 'bg-white dark:bg-[#16213e] border-2 border-gray-200 dark:border-gray-700/60 active:scale-95'
-                    : 'bg-gray-50 dark:bg-gray-800/30 border-2 border-dashed border-gray-200 dark:border-gray-700 opacity-40'
+                    ? 'bg-white dark:bg-[#16213e] border border-gray-200 dark:border-gray-700/60 active:scale-[0.96]'
+                    : 'bg-gray-50 dark:bg-gray-800/30 border border-dashed border-gray-200 dark:border-gray-700 opacity-40'
                 }`}
               >
                 {!tool.available && (
-                  <div className="absolute top-2.5 right-3">
-                    <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">
-                      即将推出
-                    </span>
-                  </div>
+                  <span className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full mb-1">
+                    即将推出
+                  </span>
                 )}
-                <span className="text-[40px] mb-2 leading-none">{tool.emoji}</span>
+                <div className="mb-2 text-gray-600 dark:text-gray-300">{tool.icon}</div>
                 <p className="text-sm font-bold text-gray-800 dark:text-white">
                   {tool.title}
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                  {tool.subtitle}
                 </p>
               </button>
             ))}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { db, type ContractionSession } from '../../../lib/db.ts'
 import { formatDate, formatTime, isSameDay } from '../../../lib/time.ts'
 
@@ -62,15 +63,15 @@ export default function ContractionHome() {
   return (
     <div className="max-w-lg mx-auto px-4 pt-8 pb-4">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="relative flex items-center justify-center mb-6">
         <button
           onClick={() => navigate('/')}
-          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2 pr-2"
+          className="absolute left-0 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2 pr-2"
         >
           ← 返回
         </button>
         <h1 className="text-xl font-extrabold text-gray-800 dark:text-white">
-          ⏱️ 宫缩计时
+          宫缩计时
         </h1>
       </div>
 
@@ -89,7 +90,7 @@ export default function ContractionHome() {
         onClick={startNewSession}
         className="w-full py-5 bg-duo-orange hover:bg-duo-orange/90 active:scale-95 text-white text-xl font-extrabold rounded-2xl border-b-4 border-amber-600 transition-all duration-150 mb-6"
       >
-        开始新记录 ⏱️
+        开始新记录 <IconTimer2OutlineDuo18 size={20} className="inline-block align-[-3px] ml-1" />
       </button>
 
       {/* 5-1-1 Rule info */}

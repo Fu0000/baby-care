@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import confetti from 'canvas-confetti'
+import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { db, type Tap } from '../../../lib/db.ts'
 import { getSettings } from '../../../lib/settings.ts'
 import { formatDuration, formatShortDuration } from '../../../lib/time.ts'
@@ -248,7 +249,7 @@ export default function KickSession() {
           )}
           <ProgressRing progress={progress} size={220} strokeWidth={10}>
             <div className="flex flex-col items-center">
-              <span className="text-5xl mb-1">🦶</span>
+              <IconChildHeadOutlineDuo18 size={48} className="mb-1 text-duo-green" />
               <span className="text-4xl font-extrabold text-duo-green">
                 ×{kickCount}
               </span>
