@@ -9,10 +9,10 @@ const navItems = [
 export default function Layout() {
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-[#1a1a2e]" style={{ paddingTop: 'var(--safe-area-top)' }}>
-      <main className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(4rem + var(--safe-area-bottom))' }}>
+      <main className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(3.25rem + var(--safe-area-bottom))' }}>
         <Outlet />
       </main>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] border-t border-gray-200 dark:border-gray-700 flex justify-around items-center z-50" style={{ height: 'calc(4rem + var(--safe-area-bottom))', paddingBottom: 'var(--safe-area-bottom)' }}>
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] border-t border-gray-200 dark:border-gray-700 flex justify-around items-center z-50" style={{ height: 'calc(3.25rem + var(--safe-area-bottom))', paddingBottom: 'var(--safe-area-bottom)' }}>
         {navItems.map(({ to, label, icon }) => (
           <NavLink
             key={to}
