@@ -40,7 +40,7 @@ export default function KickHome() {
   const todayKicks = todaySessions.reduce((sum, s) => sum + s.kickCount, 0)
 
   return (
-    <div className="px-4 pt-8">
+    <div className="max-w-lg mx-auto px-4 pt-8">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <button

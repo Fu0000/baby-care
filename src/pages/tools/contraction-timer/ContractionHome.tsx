@@ -60,7 +60,7 @@ export default function ContractionHome() {
   )
 
   return (
-    <div className="px-4 pt-8 pb-4">
+    <div className="max-w-lg mx-auto px-4 pt-8 pb-4">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
         <button

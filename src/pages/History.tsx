@@ -66,7 +66,7 @@ export default function History() {
   const maxKicks = Math.max(...chartData.map(d => d.kicks), 1)
 
   return (
-    <div className="px-4 pt-8 pb-4">
+    <div className="max-w-lg mx-auto px-4 pt-8 pb-4">
       <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white mb-6">
         记录
       </h1>

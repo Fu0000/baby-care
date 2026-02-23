@@ -70,7 +70,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="px-4 pt-8 pb-4">
+    <div className="max-w-lg mx-auto px-4 pt-8 pb-4">
       <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white mb-8">
         设置
       </h1>

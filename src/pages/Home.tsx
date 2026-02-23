@@ -92,9 +92,9 @@ export default function Home() {
 
   return (
     <div className="pb-4">
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-b from-duo-green/15 to-transparent dark:from-duo-green/10 dark:to-transparent px-4 pt-8 pb-10">
-        <div className="flex flex-col items-center">
+      {/* Hero Banner — full bleed */}
+      <div className="bg-gradient-to-b from-duo-green/15 to-transparent dark:from-duo-green/10 dark:to-transparent pt-8 pb-10">
+        <div className="flex flex-col items-center max-w-lg mx-auto px-4">
           <div className="w-20 h-20 mb-3 rounded-full overflow-hidden ring-4 ring-duo-green/20 dark:ring-duo-green/15 animate-float">
             <img
               src="/mascot.png"
@@ -111,55 +111,44 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="px-4 -mt-4">
-        {/* Overview Stats Row */}
+      <div className="max-w-lg mx-auto px-4 -mt-4">
+        {/* Overview Stats — single grouped card */}
         <div className="mb-6">
           <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             概览
           </p>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
             {/* Streak */}
-            <div className="bg-white dark:bg-[#16213e] rounded-2xl pt-0 overflow-hidden border border-gray-200 dark:border-gray-700/60">
-              <div className="h-[3px] bg-duo-orange" />
-              <div className="px-3 py-3 text-center">
-                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
-                  连续天数
-                </p>
-                <p className="text-xl font-extrabold text-gray-800 dark:text-white">
-                  <span className="mr-0.5">🔥</span>{streak}
-                </p>
+            <div className="flex items-center justify-between px-4 py-3.5">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🔥</span>
+                <span className="text-sm font-bold text-gray-800 dark:text-white">连续天数</span>
               </div>
+              <span className="text-xl font-extrabold text-duo-orange">{streak}</span>
             </div>
-
+            <div className="mx-4 border-t border-gray-100 dark:border-gray-700/40" />
             {/* Today Kicks */}
-            <div className="bg-white dark:bg-[#16213e] rounded-2xl pt-0 overflow-hidden border border-gray-200 dark:border-gray-700/60">
-              <div className="h-[3px] bg-duo-green" />
-              <div className="px-3 py-3 text-center">
-                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
-                  今日胎动
-                </p>
-                <p className="text-xl font-extrabold text-gray-800 dark:text-white">
-                  <span className="mr-0.5">🦶</span>{todayKicks}
-                </p>
+            <div className="flex items-center justify-between px-4 py-3.5">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🦶</span>
+                <span className="text-sm font-bold text-gray-800 dark:text-white">今日胎动</span>
               </div>
+              <span className="text-xl font-extrabold text-duo-green">{todayKicks}</span>
             </div>
-
+            <div className="mx-4 border-t border-gray-100 dark:border-gray-700/40" />
             {/* Due Date */}
-            <div className="bg-white dark:bg-[#16213e] rounded-2xl pt-0 overflow-hidden border border-gray-200 dark:border-gray-700/60">
-              <div className="h-[3px] bg-duo-purple" />
-              <div className="px-3 py-3 text-center">
-                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
-                  预产倒计时
-                </p>
-                <p className={`text-xl font-extrabold ${
-                  daysUntilDue !== null && daysUntilDue <= 0
-                    ? 'text-duo-orange'
-                    : 'text-gray-800 dark:text-white'
-                }`}>
-                  <span className="mr-0.5">📅</span>
-                  {daysUntilDue !== null ? formatDueDate(daysUntilDue) : '—'}
-                </p>
+            <div className="flex items-center justify-between px-4 py-3.5">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">📅</span>
+                <span className="text-sm font-bold text-gray-800 dark:text-white">预产倒计时</span>
               </div>
+              <span className={`text-xl font-extrabold ${
+                daysUntilDue !== null && daysUntilDue <= 0
+                  ? 'text-duo-orange'
+                  : 'text-duo-purple'
+              }`}>
+                {daysUntilDue !== null ? formatDueDate(daysUntilDue) : '—'}
+              </span>
             </div>
           </div>
         </div>
