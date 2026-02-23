@@ -11,17 +11,14 @@ const navItems = [
 
 export default function Layout() {
   return (
-    <div className="flex flex-col h-full min-h-dvh bg-gray-50 dark:bg-[#1a1a2e]">
-      <main
-        className="flex-1 overflow-y-auto"
-        style={{ paddingBottom: "calc(4.5rem + var(--safe-area-bottom))" }}
-      >
+    <div className="bg-gray-50 dark:bg-[#1a1a2e] min-h-dvh relative [--footer-height:5rem] pwa:[--footer-height:6rem]">
+      <main className="min-h-[calc(100dvh-var(--footer-height))] pb-[var(--footer-height)]">
         <Outlet />
       </main>
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 flex justify-center"
-        style={{ paddingBottom: "calc(var(--safe-area-bottom))" }}
-      >
+      {/* Gradient mask — fades content behind the floating dock */}
+      <div className="fixed bottom-0 inset-x-0 h-16 bg-gradient-to-t from-gray-50 dark:from-[#1a1a2e] to-transparent pointer-events-none z-50" />
+      {/* Floating dock tab bar */}
+      <div className="fixed bottom-4 pwa:bottom-8 inset-x-0 z-50 flex justify-center">
         <nav className="floating-dock flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/80 dark:bg-[#16213e]/85 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/50">
           {navItems.map(({ to, Icon }) => (
             <NavLink

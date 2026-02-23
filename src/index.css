@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant pwa (@media (display-mode: standalone));
 
 @theme {
   --color-duo-green: #58CC02;
