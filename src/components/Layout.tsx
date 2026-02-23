@@ -26,7 +26,7 @@ export default function Layout() {
       {/* Gradient mask — fades content behind the floating dock */}
       <div className="fixed bottom-0 inset-x-0 h-16 bg-gradient-to-t from-gray-50 dark:from-[#1a1a2e] to-transparent pointer-events-none z-50" />
       {/* Floating dock tab bar */}
-      <div className="fixed bottom-4 pwa:bottom-2 inset-x-0 z-50 flex justify-center">
+      <div className="fixed bottom-4 pwa:bottom-4 inset-x-0 z-50 flex justify-center">
         <nav className="floating-dock flex items-center gap-2 px-1.5 py-1.5 rounded-[30px] bg-white/80 dark:bg-[#16213e]/85 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/50">
           {navItems.map(({ to, Icon }) => (
             <NavLink
