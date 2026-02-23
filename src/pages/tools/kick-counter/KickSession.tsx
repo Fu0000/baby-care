@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import confetti from 'canvas-confetti'
-import { db, type Tap } from '../lib/db.ts'
-import { getSettings } from '../lib/settings.ts'
-import { formatDuration, formatShortDuration } from '../lib/time.ts'
-import { triggerHaptic } from '../lib/haptics.ts'
-import { getEncouragement } from '../lib/encouragements.ts'
-import { getRandomTip } from '../lib/tips.ts'
-import ProgressRing from '../components/ProgressRing.tsx'
+import { db, type Tap } from '../../../lib/db.ts'
+import { getSettings } from '../../../lib/settings.ts'
+import { formatDuration, formatShortDuration } from '../../../lib/time.ts'
+import { triggerHaptic } from '../../../lib/haptics.ts'
+import { getEncouragement } from '../../../lib/encouragements.ts'
+import { getRandomTip } from '../../../lib/tips.ts'
+import ProgressRing from '../../../components/ProgressRing.tsx'
 
-export default function Session() {
+export default function KickSession() {
   const navigate = useNavigate()
   const settings = getSettings()
   const mergeWindowMs = settings.mergeWindowMinutes * 60 * 1000
@@ -84,7 +84,6 @@ export default function Session() {
     const now = Date.now()
 
     let newKickCount = kickCount
-    let newWindowTapCount = windowTapCount
 
     if (!windowActive) {
       // Start new merge window
@@ -92,13 +91,11 @@ export default function Session() {
       windowStartTime.current = now
       setWindowActive(true)
       newKickCount = kickCount + 1
-      newWindowTapCount = 1
       setKickCount(newKickCount)
       setWindowTapCount(1)
     } else {
       // Within existing window - just count the tap
-      newWindowTapCount = windowTapCount + 1
-      setWindowTapCount(newWindowTapCount)
+      setWindowTapCount(prev => prev + 1)
     }
 
     const newTap: Tap = {
@@ -151,12 +148,12 @@ export default function Session() {
 
   async function handleEnd() {
     await saveSession(true)
-    navigate('/', { replace: true })
+    navigate('/tools/kick-counter', { replace: true })
   }
 
   async function handleCompletionDone() {
     await saveSession(true)
-    navigate('/', { replace: true })
+    navigate('/tools/kick-counter', { replace: true })
   }
 
   const progress = Math.min(kickCount / settings.goalCount, 1)

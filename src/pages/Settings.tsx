@@ -14,13 +14,17 @@ export default function Settings() {
   }
 
   async function handleExport() {
-    const sessions = await db.sessions.toArray()
-    const data = JSON.stringify(sessions, null, 2)
+    const [sessions, contractionSessions, contractions] = await Promise.all([
+      db.sessions.toArray(),
+      db.contractionSessions.toArray(),
+      db.contractions.toArray(),
+    ])
+    const data = JSON.stringify({ sessions, contractionSessions, contractions }, null, 2)
     const blob = new Blob([data], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `胎动记录_${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `宝宝助手_${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
     setExportDone(true)
@@ -35,11 +39,18 @@ export default function Settings() {
       const file = input.files?.[0]
       if (!file) return
       const text = await file.text()
-      const sessions = JSON.parse(text)
-      if (Array.isArray(sessions)) {
-        await db.sessions.bulkPut(sessions)
-        alert('导入成功！共导入 ' + sessions.length + ' 条记录')
+      const data = JSON.parse(text)
+      let count = 0
+      // Support both old format (array) and new format (object with keys)
+      if (Array.isArray(data)) {
+        await db.sessions.bulkPut(data)
+        count = data.length
+      } else {
+        if (data.sessions) { await db.sessions.bulkPut(data.sessions); count += data.sessions.length }
+        if (data.contractionSessions) { await db.contractionSessions.bulkPut(data.contractionSessions); count += data.contractionSessions.length }
+        if (data.contractions) { await db.contractions.bulkPut(data.contractions); count += data.contractions.length }
       }
+      alert('导入成功！共导入 ' + count + ' 条记录')
     }
     input.click()
   }
@@ -49,7 +60,11 @@ export default function Settings() {
       setClearConfirm(true)
       return
     }
-    await db.sessions.clear()
+    await Promise.all([
+      db.sessions.clear(),
+      db.contractionSessions.clear(),
+      db.contractions.clear(),
+    ])
     setClearConfirm(false)
     alert('所有记录已清除')
   }
@@ -61,11 +76,35 @@ export default function Settings() {
       </h1>
 
       <div className="space-y-4">
+        {/* Due Date */}
+        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-gray-800 dark:text-white">预产期</p>
+              <p className="text-xs text-gray-400 mt-0.5">设置后首页显示倒计时</p>
+            </div>
+            <input
+              type="date"
+              value={settings.dueDate || ''}
+              onChange={e => update({ dueDate: e.target.value || null })}
+              className="bg-gray-100 dark:bg-gray-800 text-sm font-bold text-gray-800 dark:text-white rounded-xl px-3 py-2 border-0 outline-none"
+            />
+          </div>
+          {settings.dueDate && (
+            <button
+              onClick={() => update({ dueDate: null })}
+              className="text-xs text-duo-red mt-2"
+            >
+              清除预产期
+            </button>
+          )}
+        </div>
+
         {/* Goal Count */}
         <div className="bg-white dark:bg-[#16213e] rounded-2xl p-4">
           <label className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-bold text-gray-800 dark:text-white">目标次数</p>
+              <p className="text-sm font-bold text-gray-800 dark:text-white">胎动目标次数</p>
               <p className="text-xs text-gray-400 mt-0.5">Cardiff 标准为 10 次</p>
             </div>
             <div className="flex items-center gap-2">
@@ -169,7 +208,7 @@ export default function Settings() {
         <div className="bg-white dark:bg-[#16213e] rounded-2xl p-4">
           <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">关于</p>
           <p className="text-xs text-gray-400">
-            数胎动 v1.0 · 为准妈妈用心打造
+            宝宝助手 v2.0 · 为准妈妈用心打造
           </p>
           <p className="text-xs text-gray-400 mt-1">
             本应用仅为记录工具，不提供医学建议。
