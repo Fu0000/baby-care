@@ -3,6 +3,7 @@ import { Toggle } from '@base-ui/react/toggle'
 import { ToggleGroup } from '@base-ui/react/toggle-group'
 import { NumberField } from '@base-ui/react/number-field'
 import { AlertDialog } from '@base-ui/react/alert-dialog'
+import { Dialog } from '@base-ui/react/dialog'
 import { DayPicker, getDefaultClassNames } from 'react-day-picker'
 import { zhCN } from 'react-day-picker/locale'
 import { sileo } from 'sileo'
@@ -96,47 +97,54 @@ export default function Settings() {
               <p className="text-sm font-bold text-gray-800 dark:text-white">预产期</p>
               <p className="text-xs text-gray-400 mt-0.5">设置后首页显示倒计时</p>
             </div>
-            <button
-              onClick={() => setShowCalendar(!showCalendar)}
-              className="bg-gray-100 dark:bg-gray-800 text-sm font-bold text-gray-800 dark:text-white rounded-xl px-3 py-2"
-            >
-              {settings.dueDate || '选择日期'}
-            </button>
-          </div>
-          {showCalendar && (
-            <div className="mt-4">
-              <DayPicker
-                animate
-                locale={zhCN}
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  if (date) {
-                    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                    update({ dueDate: iso })
-                  } else {
-                    update({ dueDate: null })
-                  }
-                  setShowCalendar(false)
-                }}
-                defaultMonth={selectedDate}
-                classNames={{
-                  today: 'border border-duo-purple font-extrabold',
-                  selected: 'bg-duo-purple! text-white! rounded-full!',
-                  root: `${defaultClassNames.root} w-full`,
-                  chevron: `${defaultClassNames.chevron} fill-duo-purple`,
-                }}
-              />
+            <div className="flex items-center gap-2">
+              {settings.dueDate && (
+                <button
+                  onClick={() => update({ dueDate: null })}
+                  className="text-xs text-gray-400 hover:text-duo-red transition-colors"
+                >
+                  清除
+                </button>
+              )}
+              <Dialog.Root open={showCalendar} onOpenChange={setShowCalendar}>
+                <Dialog.Trigger className="bg-gray-100 dark:bg-gray-800 text-sm font-bold text-gray-800 dark:text-white rounded-xl px-3 py-2 cursor-pointer">
+                  {settings.dueDate || '选择日期'}
+                </Dialog.Trigger>
+                <Dialog.Portal>
+                  <Dialog.Backdrop className="fixed inset-0 bg-black/40 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+                  <Dialog.Popup className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] rounded-t-3xl px-2 pt-5 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full outline-none" style={{ paddingBottom: 'calc(var(--safe-area-bottom) + 2rem)' }}>
+                    <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4" />
+                    <Dialog.Title className="text-lg font-extrabold text-gray-800 dark:text-white text-center mb-2">
+                      选择预产期
+                    </Dialog.Title>
+                    <div className="flex justify-center">
+                      <DayPicker
+                        animate
+                        locale={zhCN}
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          if (date) {
+                            const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                            update({ dueDate: iso })
+                          } else {
+                            update({ dueDate: null })
+                          }
+                          setShowCalendar(false)
+                        }}
+                        defaultMonth={selectedDate}
+                        classNames={{
+                          today: 'border border-duo-purple font-extrabold',
+                          selected: 'bg-duo-purple! text-white! rounded-full!',
+                          chevron: `${defaultClassNames.chevron} fill-duo-purple`,
+                        }}
+                      />
+                    </div>
+                  </Dialog.Popup>
+                </Dialog.Portal>
+              </Dialog.Root>
             </div>
-          )}
-          {settings.dueDate && !showCalendar && (
-            <button
-              onClick={() => update({ dueDate: null })}
-              className="text-xs text-duo-red mt-2"
-            >
-              清除预产期
-            </button>
-          )}
+          </div>
         </div>
 
         {/* Goal Count */}
@@ -229,32 +237,26 @@ export default function Settings() {
         数据管理
       </p>
       <div className="space-y-3 mb-8">
-        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60 space-y-3">
+        <div className="bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
           <button
             onClick={handleExport}
-            className="w-full py-3 bg-duo-blue/10 text-duo-blue font-bold text-sm rounded-xl hover:bg-duo-blue/20 transition-colors"
+            className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
-            {exportDone ? '✅ 导出成功！' : '📤 导出数据 (JSON)'}
+            <span className="text-sm font-bold text-gray-800 dark:text-white">{exportDone ? '导出成功' : '导出数据'}</span>
+            <span className="text-xs text-gray-400">JSON</span>
           </button>
-
+          <div className="mx-5 border-t border-gray-100 dark:border-gray-700/40" />
           <button
             onClick={handleImport}
-            className="w-full py-3 bg-duo-purple/10 text-duo-purple font-bold text-sm rounded-xl hover:bg-duo-purple/20 transition-colors"
+            className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
-            📥 导入数据
+            <span className="text-sm font-bold text-gray-800 dark:text-white">导入数据</span>
+            <span className="text-xs text-gray-400">JSON</span>
           </button>
-        </div>
-      </div>
-
-      {/* Danger Zone */}
-      <p className="text-[11px] font-bold text-duo-red/60 uppercase tracking-wider mb-3">
-        危险操作
-      </p>
-      <div className="space-y-3 mb-8">
-        <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-duo-red/20 dark:border-duo-red/15">
+          <div className="mx-5 border-t border-gray-100 dark:border-gray-700/40" />
           <AlertDialog.Root>
-            <AlertDialog.Trigger className="w-full py-3 font-bold text-sm rounded-xl bg-duo-red/10 text-duo-red hover:bg-duo-red/20 transition-colors cursor-pointer">
-              🗑️ 清除所有数据
+            <AlertDialog.Trigger className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-red-50 dark:hover:bg-red-500/5 transition-colors cursor-pointer">
+              <span className="text-sm font-bold text-duo-red">清除所有数据</span>
             </AlertDialog.Trigger>
             <AlertDialog.Portal>
               <AlertDialog.Backdrop className="fixed inset-0 bg-black/50 transition-opacity duration-150 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
@@ -283,16 +285,15 @@ export default function Settings() {
       </div>
 
       {/* About Section */}
-      <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-        关于
-      </p>
-      <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
-        <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">宝宝助手</p>
-        <p className="text-xs text-gray-400">
-          v2.0 · 为准妈妈用心打造
+      <div className="text-center mt-4 mb-8 px-4">
+        <p className="text-xs text-gray-400 dark:text-gray-500">
+          宝宝助手 v2.0
         </p>
-        <p className="text-xs text-gray-400 mt-1">
-          本应用仅为记录工具，不提供医学建议。
+        <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">
+          本应用仅为记录工具，不提供医学建议
+        </p>
+        <p className="text-xs text-gray-300 dark:text-gray-600 mt-3">
+          Made with care by <a href="https://cali.so" target="_blank" rel="noopener noreferrer" className="font-bold text-gray-400 dark:text-gray-500 underline decoration-gray-300 dark:decoration-gray-600 underline-offset-2">Cali</a>
         </p>
       </div>
       </div>

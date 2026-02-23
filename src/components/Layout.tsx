@@ -12,10 +12,10 @@ const navItems = [
 
 export default function Layout() {
   return (
-    <div className="bg-gray-50 dark:bg-[#1a1a2e] h-dvh relative [--footer-height:5rem] pwa:[--footer-height:6rem]">
+    <div className="bg-gray-50 dark:bg-[#1a1a2e] h-screen relative [--footer-height:5rem] pwa:[--footer-height:6rem]">
       <ScrollArea.Root className="h-full">
         <ScrollArea.Viewport className="h-full">
-          <main className="min-h-[calc(100dvh-var(--footer-height))] pb-[var(--footer-height)]">
+          <main className="min-h-[calc(100vh-var(--footer-height))] pb-[var(--footer-height)]">
             <Outlet />
           </main>
         </ScrollArea.Viewport>
