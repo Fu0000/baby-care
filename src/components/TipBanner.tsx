@@ -16,7 +16,7 @@ export default function TipBanner() {
   if (!visible) return null
 
   return (
-    <div className="mx-4 mt-4 p-4 bg-gray-100 dark:bg-gray-800/50 rounded-2xl animate-slide-up">
+    <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800/50 rounded-2xl animate-slide-up">
       <div className="flex items-start gap-2">
         <span className="text-base shrink-0">💡</span>
         <div>

@@ -1,14 +1,25 @@
 # 宝宝助手 Roadmap
 
-> **Created:** 2026-02-23 · **Repo:** CaliCastle/kick-counter (private)
+> **Created:** 2026-02-23 · **Last updated:** 2026-02-23 · **Repo:** CaliCastle/babycare
 
-## Phase 1: Hub 架构 + 宫缩计时器 ⬅️ IN PROGRESS
-- [ ] 重构为模块化 hub 架构（首页工具卡片入口）
-- [ ] 设置页增加预产期设置
-- [ ] 预产期倒计时显示
-- [ ] 宫缩计时器（记录间隔+持续时间，5-1-1 规则提醒）
-- [ ] 宫缩历史记录
-- [ ] 保留现有数胎动功能不变
+## Phase 1: Hub 架构 + 宫缩计时器 ✅ COMPLETE
+- [x] 重构为模块化 hub 架构（首页工具卡片入口）
+- [x] 设置页增加预产期设置（react-day-picker + bottom sheet）
+- [x] 预产期倒计时显示（首页 featured pill + 孕周数）
+- [x] 宫缩计时器（记录间隔+持续时间，5-1-1 规则提醒）
+- [x] 宫缩历史记录
+- [x] 保留现有数胎动功能不变
+- [x] Smart tool ordering based on pregnancy stage (getWeeksPregnant)
+
+## Phase 1.5: UI Polish + Base UI Migration ✅ COMPLETE
+- [x] Migrate to Base UI headless components (Tabs, Collapsible, Dialog, AlertDialog, Progress, NumberField, ToggleGroup, ScrollArea)
+- [x] Sticky header with progressive backdrop blur (StickyHeader component)
+- [x] Floating dock with concentric corner radius + PWA bottom positioning
+- [x] Home page: pill-shaped stat capsules, featured due date card
+- [x] Settings: bottom sheet date picker, unified data management list, ToggleGroup segmented controls
+- [x] Toast notifications via sileo (replacing native alert())
+- [x] TipBanner muted styling
+- [x] Personal footer ("Made with care by Cali")
 
 ## Phase 2: 待产包清单
 - [ ] Checklist 组件（妈妈包/宝宝包/证件包分组）
@@ -43,4 +54,10 @@
 - [x] 孕期小贴士彩蛋
 - [x] Mascot 集成
 - [x] Favicon + OG metadata
-- [x] Push to GitHub (CaliCastle/kick-counter)
+- [x] Push to GitHub (CaliCastle/babycare)
+- [x] Hub architecture with tool grid
+- [x] Contraction timer with 5-1-1 rule
+- [x] Base UI headless component migration
+- [x] Progressive blur sticky headers
+- [x] react-day-picker + sileo toasts integration
+- [x] Smart pregnancy-stage-aware tool ordering

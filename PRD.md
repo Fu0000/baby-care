@@ -1,185 +1,123 @@
-# 数胎动 (Kick Counter) — PRD
+# 宝宝助手 (BabyCare) — PRD
 
-> **Version:** 0.1 · **Date:** 2026-02-23 · **Author:** Nick (CTO)
-> **Status:** Draft — Pending Cali's review
+> **Version:** 2.0 · **Date:** 2026-02-23 · **Author:** Cali
+> **Status:** Phase 1 Complete — Phase 2 planned
 
 ---
 
 ## 1. Overview
 
-一款轻量级 PWA，帮助孕妈妈记录和追踪胎动。仅供个人使用（Cali 的太太），不需要后端/账号系统。
+一款轻量级 PWA，帮助孕妈妈记录和追踪孕期数据。纯本地存储，无后端/账号系统。
 
-**一句话描述：** Duolingo 风格的胎动计数器，离线可用，数据本地存储。
+**一句话描述：** Duolingo 风格的孕期助手，离线可用，数据本地存储。
 
 ## 2. Goals
 
 - ✅ 快速开始一次计数 session，一键点击记录胎动
-- ✅ Cardiff Count-to-10 模式 + 5 分钟合并规则（5 分钟内多次算 1 次有效胎动，记录达到 10 次所需时间）
-- ✅ 查看历史记录和趋势
-- ✅ 离线可用（PWA + localStorage/IndexedDB）
+- ✅ Cardiff Count-to-10 模式 + 可配置合并规则（3/5/10 分钟）
+- ✅ 宫缩计时器 + 5-1-1 规则自动提醒
+- ✅ 查看历史记录和趋势（按日期分组 + 7/30 天趋势图）
+- ✅ 离线可用（PWA + IndexedDB + localStorage）
 - ✅ Duolingo 风格：活泼、鼓励性、有成就感
 - ✅ 孕期小贴士彩蛋（随机展示）
+- ✅ 预产期设置 + 孕周计算 + 智能工具排序
+- ✅ 无障碍：Base UI headless components + 键盘导航
 
 ## 3. Non-Goals
 
 - ❌ 用户注册 / 多用户
 - ❌ 后端 API / 数据库
 - ❌ 医学建议或诊断
-- ❌ 多语言（纯中文 UI）
+- ❌ 多语言（纯中文 UI，部分 UI 元素英文）
 
 ## 4. 技术栈
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Vite + React |
-| Styling | Tailwind CSS |
-| UI | shadcn/ui + 自定义 Duolingo 风格组件 |
-| Storage | IndexedDB (via Dexie.js 或 idb) |
-| PWA | vite-plugin-pwa |
-| Deploy | Vercel |
+| Framework | Vite 7 + React 19 + TypeScript 5.9 |
+| Styling | Tailwind CSS 4 (via @tailwindcss/vite) |
+| UI Components | @base-ui/react (headless) + custom Duolingo-style design |
+| Date Picker | react-day-picker (zh-CN locale) |
+| Toasts | sileo |
+| Storage | IndexedDB (Dexie.js 4) + localStorage |
+| PWA | vite-plugin-pwa (Workbox) |
+| Icons | Nucleo (glass, outline-duo-18, fill-duo-18) |
+| Deploy | Vercel (planned) |
 | Package Manager | pnpm |
-
-> ✅ 已确认 Vite + React
 
 ## 5. Core Features
 
-### 5.1 计数 Session
+### 5.1 首页 Hub
 
-**入口：** 大按钮「开始数胎动」
+- 工具卡片网格入口（数胎动、宫缩计时、待产包、喂奶记录）
+- 概览 pill 胶囊统计（连续天数、今日胎动）
+- Featured 预产期倒计时卡（显示天数 + 孕周）
+- 智能工具排序：28周前宫缩优先，28周后胎动优先，过预产期宫缩优先
 
-**Session 流程：**
-1. 点击开始 → 计时器启动
-2. 每次感受到胎动 → 点击大按钮
-3. **5 分钟合并规则：**
-   - 第一次点击开始一个 5 分钟窗口
-   - 窗口内的所有点击合并为 1 次有效胎动
-   - 窗口结束后，下一次点击开启新窗口
-4. 实时显示：已用时间、有效胎动次数、当前窗口状态
-5. 手动结束 session，或到达目标（如 10 次）自动提示
+### 5.2 数胎动
 
-**Session 数据模型：**
-```typescript
-interface KickSession {
-  id: string
-  startedAt: Date
-  endedAt: Date | null
-  taps: Tap[]           // 所有原始点击
-  kickCount: number     // 合并后的有效次数
-  goalReached: boolean   // 是否达到目标次数
-}
+- Cardiff Count-to-10 模式 + 可配置合并窗口（3/5/10 分钟）
+- Session UI：进度环、鼓励文案、合并窗口状态、进度条
+- 达标庆祝：confetti 动画 + 完成 Dialog
+- 历史：趋势图 + 按日期分组 + 可展开时间线
 
-interface Tap {
-  timestamp: Date
-  windowId: number      // 属于第几个 5 分钟窗口
-}
-```
+### 5.3 宫缩计时
 
-### 5.2 Session 进行时 UI
+- 实时计时器（开始/结束宫缩）
+- 自动计算间隔 + 持续时间
+- 5-1-1 规则自动检测 + AlertDialog 医院提醒
+- 历史摘要（平均时长、平均间隔）
 
-```
-┌─────────────────────────────┐
-│      ⏱ 00:23:45             │
-│                             │
-│     ╭───────────────╮       │
-│     │               │       │
-│     │    👶 ×6      │       │  ← 大圆按钮，点击记录
-│     │               │       │
-│     ╰───────────────╯       │
-│                             │
-│  ┌─ 当前窗口 ──────────────┐ │
-│  │ 🟢 活跃中 · 剩余 3:42   │ │  ← 5分钟窗口倒计时
-│  │ 本窗口点击: 3 次        │ │
-│  └────────────────────────┘ │
-│                             │
-│  目标: 10 次  ████████░░ 6  │  ← 进度条
-│                             │
-│  [ 结束 Session ]           │
-└─────────────────────────────┘
-```
+### 5.4 设置
 
-### 5.3 历史记录
+- 预产期（react-day-picker in bottom sheet Dialog）
+- 胎动目标次数（NumberField stepper，1-50）
+- 合并窗口时长（ToggleGroup segmented control）
+- 外观模式（系统/浅色/深色 ToggleGroup）
+- 数据管理（导出/导入 JSON + 清除确认 AlertDialog）
 
-- 按日期分组的 session 列表
-- 每条显示：日期时间、持续时长、有效胎动次数
-- 简单的趋势图（最近 7 天 / 30 天的每日胎动次数）
-- 点击展开查看 session 详情（时间线视图）
+### 5.5 Duolingo 风格元素
 
-### 5.4 Duolingo 风格元素
-
-- **大圆角、高饱和度配色** — 主色绿色 (#58CC02)，辅助橙/紫/蓝
-- **Mascot / 角色** — 可以是一个可爱的小宝宝 emoji 或自定义插画
-- **鼓励反馈：**
-  - 每次有效胎动：短动画 + 鼓励文案（"太棒了！"、"宝宝很活跃！"、"继续加油！"）
-  - 达到目标：🎉 庆祝动画（confetti / 星星）
-  - 连续打卡：streak 显示（"连续 5 天记录！"）
-- **音效 / 触觉反馈** — 点击时轻微震动 (Haptic API)
-- **圆润的卡片式布局**
-
-### 5.5 孕期小贴士（彩蛋）
-
-- 内置一组孕期小贴士（饮食、运动、睡眠、心理等）
-- **触发时机：**
-  - Session 达标后的庆祝页面随机展示一条
-  - 历史记录页偶尔展示
-  - 打开 app 时随机 splash
-- 贴士内容可硬编码在前端，后续可扩展
-- 风格：温暖、实用、不说教，Duolingo 的「你知道吗？」口吻
-
-### 5.6 设置
-
-- 目标次数（默认 10）
-- 合并窗口时长（默认 5 分钟，可调 3/5/10 分钟）
-- ~~Session 提醒~~ （暂不需要，由 Baymax 在家群提醒）
-- 数据导出（JSON）
-- 深色模式
+- 大圆角、高饱和度配色（绿/橙/蓝/紫/红/黄）
+- Mascot 浮动动画
+- 鼓励反馈：每次有效胎动短文案 + 达标 confetti
+- 连续打卡 streak
+- 触觉反馈 (Haptic API)
+- 孕期小贴士（TipBanner，50% 随机展示）
 
 ## 6. 页面结构
 
 ```
-/               → 首页（开始 session / 快速入口）
-/session        → 计数进行中
-/history        → 历史记录
-/settings       → 设置
+/                                    → 首页 Hub（Layout）
+/history                             → 历史记录（Layout, Tabs + Collapsible）
+/settings                            → 设置（Layout）
+/tools/kick-counter                  → 数胎动首页（Layout）
+/tools/kick-counter/session          → 数胎动 session（全屏）
+/tools/contraction-timer             → 宫缩计时首页（Layout）
+/tools/contraction-timer/session/:id → 宫缩 session（全屏）
 ```
 
-SPA 路由，hash-based 或 client-side routing。
+HashRouter, SPA routing.
 
 ## 7. 数据存储
 
-- **IndexedDB** 存 session 数据（Dexie.js 推荐）
-- **localStorage** 存设置项
-- 无云同步，所有数据本地
-- 考虑 export/import JSON 做手动备份
+- **IndexedDB** (Dexie.js): `sessions`, `contractionSessions`, `contractions`
+- **localStorage**: `babycare-settings` (goalCount, mergeWindowMinutes, colorMode, dueDate)
+- 无云同步，export/import JSON 手动备份
+- 版本化 schema (db.version(N+1))
 
 ## 8. PWA 要求
 
-- `manifest.json` — 名称、图标、主题色
-- Service Worker — 离线缓存所有静态资源
-- 支持 Add to Home Screen
-- 全屏模式 (`display: standalone`)
+- ✅ manifest.json — 名称、图标、主题色
+- ✅ Service Worker — Workbox 离线缓存
+- ✅ Add to Home Screen
+- ✅ 全屏 standalone 模式
+- ✅ Safe area insets 处理
 
-## 9. 里程碑
+## 9. Open Questions
 
-| Phase | 内容 | 预估 |
-|-------|------|------|
-| **v0.1** | 核心计数功能 + 5 分钟合并 + session 记录 | 1-2 天 |
-| **v0.2** | 历史记录 + 趋势图 + Duolingo 动效 | 1 天 |
-| **v0.3** | PWA 离线 + 设置 + 导出 | 半天 |
-| **v1.0** | Polish + 部署 | 半天 |
-
-## 10. Decisions
-
-- ✅ Vite + React
-- ✅ 纯中文 UI
-- ✅ 无定时提醒（Baymax 负责）
-- ✅ Mascot：Cali 已生成插画（待下载放入项目）
-- ✅ Cardiff Count-to-10 + 5 分钟合并法
-- ✅ 孕期小贴士彩蛋
-
-## 11. Open Questions
-
-1. **数据迁移** — 她之前用的 app 数据需要导入吗？
-2. **域名** — 用什么域名部署？
+1. **域名** — 部署用什么域名？
+2. **待产包** — Phase 2 的预置物品清单内容确认
 
 ---
 
