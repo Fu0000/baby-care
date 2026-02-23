@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getSettings, saveSettings, type Settings as SettingsType } from '../lib/settings.ts'
+import { getSettings, saveSettings, type Settings as SettingsType, type ColorMode } from '../lib/settings.ts'
 import { db } from '../lib/db.ts'
 
 export default function Settings() {
@@ -163,24 +163,23 @@ export default function Settings() {
       </p>
       <div className="space-y-3 mb-8">
         <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
-          <label className="flex items-center justify-between cursor-pointer">
-            <div>
-              <p className="text-sm font-bold text-gray-800 dark:text-white">深色模式</p>
-              <p className="text-xs text-gray-400 mt-0.5">保护眼睛，夜间使用更舒适</p>
-            </div>
-            <button
-              onClick={() => update({ darkMode: !settings.darkMode })}
-              className={`relative w-12 h-7 rounded-full transition-colors ${
-                settings.darkMode ? 'bg-duo-green' : 'bg-gray-300 dark:bg-gray-600'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                  settings.darkMode ? 'translate-x-5' : ''
+          <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">外观模式</p>
+          <p className="text-xs text-gray-400 mb-3">选择浅色、深色或跟随系统</p>
+          <div className="flex gap-2">
+            {([['system', '系统'], ['light', '浅色'], ['dark', '深色']] as const).map(([mode, label]) => (
+              <button
+                key={mode}
+                onClick={() => update({ colorMode: mode as ColorMode })}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                  settings.colorMode === mode
+                    ? 'bg-duo-green text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                 }`}
-              />
-            </button>
-          </label>
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

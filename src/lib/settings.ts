@@ -1,7 +1,9 @@
+export type ColorMode = 'system' | 'light' | 'dark'
+
 export interface Settings {
   goalCount: number
   mergeWindowMinutes: number
-  darkMode: boolean
+  colorMode: ColorMode
   dueDate: string | null // ISO date string e.g. "2026-05-15"
 }
 
@@ -11,7 +13,7 @@ const LEGACY_KEY = 'kick-counter-settings'
 const defaultSettings: Settings = {
   goalCount: 10,
   mergeWindowMinutes: 5,
-  darkMode: false,
+  colorMode: 'system',
   dueDate: null,
 }
 
@@ -26,16 +28,38 @@ export function getSettings(): Settings {
     }
   }
   if (!raw) return defaultSettings
-  return { ...defaultSettings, ...JSON.parse(raw) }
+  const parsed = { ...defaultSettings, ...JSON.parse(raw) }
+  // Migrate old boolean darkMode → colorMode
+  if ('darkMode' in parsed && !('colorMode' in JSON.parse(raw))) {
+    parsed.colorMode = parsed.darkMode ? 'dark' : 'system'
+    delete (parsed as Record<string, unknown>).darkMode
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(parsed))
+  }
+  return parsed
 }
 
 export function saveSettings(settings: Settings): void {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
-  applyDarkMode(settings.darkMode)
+  applyColorMode(settings.colorMode)
 }
 
-export function applyDarkMode(dark: boolean): void {
-  document.documentElement.classList.toggle('dark', dark)
+let _systemDarkQuery: MediaQueryList | null = null
+
+export function applyColorMode(mode: ColorMode): void {
+  if (mode === 'system') {
+    if (!_systemDarkQuery) {
+      _systemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    }
+    document.documentElement.classList.toggle('dark', _systemDarkQuery.matches)
+    _systemDarkQuery.addEventListener('change', _onSystemChange)
+  } else {
+    _systemDarkQuery?.removeEventListener('change', _onSystemChange)
+    document.documentElement.classList.toggle('dark', mode === 'dark')
+  }
+}
+
+function _onSystemChange(e: MediaQueryListEvent): void {
+  document.documentElement.classList.toggle('dark', e.matches)
 }
 
 export function getDaysUntilDue(): number | null {
