@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "react-day-picker/style.css";
+@import "sileo/styles.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant pwa (@media (display-mode: standalone));

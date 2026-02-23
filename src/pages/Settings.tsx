@@ -3,6 +3,9 @@ import { Toggle } from '@base-ui/react/toggle'
 import { ToggleGroup } from '@base-ui/react/toggle-group'
 import { NumberField } from '@base-ui/react/number-field'
 import { AlertDialog } from '@base-ui/react/alert-dialog'
+import { DayPicker, getDefaultClassNames } from 'react-day-picker'
+import { zhCN } from 'react-day-picker/locale'
+import { sileo } from 'sileo'
 import StickyHeader from '../components/StickyHeader.tsx'
 import { getSettings, saveSettings, type Settings as SettingsType, type ColorMode } from '../lib/settings.ts'
 import { db } from '../lib/db.ts'
@@ -10,6 +13,10 @@ import { db } from '../lib/db.ts'
 export default function Settings() {
   const [settings, setSettings] = useState<SettingsType>(getSettings)
   const [exportDone, setExportDone] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
+  const defaultClassNames = getDefaultClassNames()
+
+  const selectedDate = settings.dueDate ? new Date(settings.dueDate + 'T00:00:00') : undefined
 
   function update(patch: Partial<SettingsType>) {
     const next = { ...settings, ...patch }
@@ -54,7 +61,7 @@ export default function Settings() {
         if (data.contractionSessions) { await db.contractionSessions.bulkPut(data.contractionSessions); count += data.contractionSessions.length }
         if (data.contractions) { await db.contractions.bulkPut(data.contractions); count += data.contractions.length }
       }
-      alert('导入成功！共导入 ' + count + ' 条记录')
+      sileo.success({ title: '导入成功', description: `共导入 ${count} 条记录` })
     }
     input.click()
   }
@@ -65,6 +72,7 @@ export default function Settings() {
       db.contractionSessions.clear(),
       db.contractions.clear(),
     ])
+    sileo.success({ title: '已清除', description: '所有记录已删除' })
   }
 
   return (
@@ -88,14 +96,40 @@ export default function Settings() {
               <p className="text-sm font-bold text-gray-800 dark:text-white">预产期</p>
               <p className="text-xs text-gray-400 mt-0.5">设置后首页显示倒计时</p>
             </div>
-            <input
-              type="date"
-              value={settings.dueDate || ''}
-              onChange={e => update({ dueDate: e.target.value || null })}
-              className="bg-gray-100 dark:bg-gray-800 text-sm font-bold text-gray-800 dark:text-white rounded-xl px-3 py-2 border-0 outline-none"
-            />
+            <button
+              onClick={() => setShowCalendar(!showCalendar)}
+              className="bg-gray-100 dark:bg-gray-800 text-sm font-bold text-gray-800 dark:text-white rounded-xl px-3 py-2"
+            >
+              {settings.dueDate || '选择日期'}
+            </button>
           </div>
-          {settings.dueDate && (
+          {showCalendar && (
+            <div className="mt-4">
+              <DayPicker
+                animate
+                locale={zhCN}
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  if (date) {
+                    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                    update({ dueDate: iso })
+                  } else {
+                    update({ dueDate: null })
+                  }
+                  setShowCalendar(false)
+                }}
+                defaultMonth={selectedDate}
+                classNames={{
+                  today: 'border border-duo-purple font-extrabold',
+                  selected: 'bg-duo-purple! text-white! rounded-full!',
+                  root: `${defaultClassNames.root} w-full`,
+                  chevron: `${defaultClassNames.chevron} fill-duo-purple`,
+                }}
+              />
+            </div>
+          )}
+          {settings.dueDate && !showCalendar && (
             <button
               onClick={() => update({ dueDate: null })}
               className="text-xs text-duo-red mt-2"

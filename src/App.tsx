@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { Toaster } from 'sileo'
 import { Agentation } from 'agentation'
 import Home from './pages/Home.tsx'
 import History from './pages/History.tsx'
@@ -12,6 +13,7 @@ import ContractionSession from './pages/tools/contraction-timer/ContractionSessi
 export default function App() {
   return (
     <>
+    <Toaster position="top-center" />
     {import.meta.env.DEV && <Agentation />}
     <Routes>
       <Route element={<Layout />}>
