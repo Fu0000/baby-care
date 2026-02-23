@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import confetti from 'canvas-confetti'
+import { Dialog } from '@base-ui/react/dialog'
+import { Progress } from '@base-ui/react/progress'
 import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { db, type Tap } from '../../../lib/db.ts'
 import { getSettings } from '../../../lib/settings.ts'
@@ -159,56 +161,64 @@ export default function KickSession() {
 
   const progress = Math.min(kickCount / settings.goalCount, 1)
 
-  // Completion overlay
-  if (showCompletion) {
-    return (
-      <div className="fixed inset-0 bg-white dark:bg-[#1a1a2e] z-50 flex flex-col items-center justify-center px-6 animate-bounce-in">
-        <div className="text-6xl mb-4">🎉</div>
-        <h1 className="text-3xl font-extrabold text-duo-green mb-2">太棒了！</h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-2">
-          达到 {settings.goalCount} 次胎动目标！
-        </p>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mb-8">
-          用时 {formatDuration(elapsed)}
-        </p>
-
-        {/* Summary Card */}
-        <div className="bg-gray-50 dark:bg-[#16213e] rounded-3xl p-6 w-full max-w-sm mb-6">
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-extrabold text-duo-green">{kickCount}</p>
-              <p className="text-xs text-gray-400">有效胎动</p>
-            </div>
-            <div>
-              <p className="text-2xl font-extrabold text-duo-blue">{taps.length}</p>
-              <p className="text-xs text-gray-400">总点击数</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tip */}
-        <div className="bg-duo-yellow/20 dark:bg-duo-yellow/10 rounded-2xl p-4 w-full max-w-sm mb-8">
-          <div className="flex items-start gap-2">
-            <span className="text-lg">💡</span>
-            <div>
-              <p className="text-xs font-bold text-duo-orange mb-1">小贴士</p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">{completionTip}</p>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={handleCompletionDone}
-          className="w-full max-w-sm py-4 bg-duo-green text-white text-lg font-extrabold rounded-2xl border-b-4 border-duo-green-dark active:scale-95 transition-transform"
-        >
-          完成 ✨
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div className="fixed inset-0 bg-white dark:bg-[#1a1a2e] flex flex-col" style={{ paddingTop: 'var(--safe-area-top)' }}>
+      {/* Completion Dialog */}
+      <Dialog.Root
+        open={showCompletion}
+        onOpenChange={(open) => {
+          if (!open) handleCompletionDone()
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 bg-white dark:bg-[#1a1a2e]" />
+          <Dialog.Popup className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6 animate-bounce-in outline-none">
+            <div className="text-6xl mb-4">🎉</div>
+            <Dialog.Title className="text-3xl font-extrabold text-duo-green mb-2">太棒了！</Dialog.Title>
+            <Dialog.Description className="text-center mb-8">
+              <p className="text-lg text-gray-600 dark:text-gray-300 mb-2">
+                达到 {settings.goalCount} 次胎动目标！
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                用时 {formatDuration(elapsed)}
+              </p>
+            </Dialog.Description>
+
+            {/* Summary Card */}
+            <div className="bg-gray-50 dark:bg-[#16213e] rounded-3xl p-6 w-full max-w-sm mb-6">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <p className="text-2xl font-extrabold text-duo-green">{kickCount}</p>
+                  <p className="text-xs text-gray-400">有效胎动</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-extrabold text-duo-blue">{taps.length}</p>
+                  <p className="text-xs text-gray-400">总点击数</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tip */}
+            <div className="bg-duo-yellow/20 dark:bg-duo-yellow/10 rounded-2xl p-4 w-full max-w-sm mb-8">
+              <div className="flex items-start gap-2">
+                <span className="text-lg">💡</span>
+                <div>
+                  <p className="text-xs font-bold text-duo-orange mb-1">小贴士</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{completionTip}</p>
+                </div>
+              </div>
+            </div>
+
+            <Dialog.Close
+              onClick={handleCompletionDone}
+              className="w-full max-w-sm py-4 bg-duo-green text-white text-lg font-extrabold rounded-2xl border-b-4 border-duo-green-dark active:scale-95 transition-transform cursor-pointer"
+            >
+              完成 ✨
+            </Dialog.Close>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <button
@@ -291,20 +301,17 @@ export default function KickSession() {
         </div>
 
         {/* Progress Bar */}
-        <div className="flex items-center gap-3">
+        <Progress.Root value={kickCount} max={settings.goalCount} className="flex items-center gap-3">
           <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
             目标 {settings.goalCount}
           </span>
-          <div className="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-duo-green rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
+          <Progress.Track className="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <Progress.Indicator className="h-full bg-duo-green rounded-full transition-all duration-500 ease-out" />
+          </Progress.Track>
           <span className="text-sm font-extrabold text-duo-green shrink-0">
             {kickCount}
           </span>
-        </div>
+        </Progress.Root>
 
         {/* End Button */}
         <button

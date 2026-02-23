@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
+import { Tabs } from '@base-ui/react/tabs'
+import { Collapsible } from '@base-ui/react/collapsible'
 import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { db, type KickSession, type ContractionSession, type Contraction } from '../lib/db.ts'
 import { formatDate, formatTime, formatDuration, isSameDay } from '../lib/time.ts'
-
-type Tab = 'kicks' | 'contractions'
 
 function formatMs(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -15,12 +15,12 @@ function formatMs(ms: number): string {
 }
 
 export default function History() {
-  const [tab, setTab] = useState<Tab>('kicks')
   const [kickSessions, setKickSessions] = useState<KickSession[]>([])
   const [contractionSessions, setContractionSessions] = useState<ContractionSession[]>([])
   const [contractions, setContractions] = useState<Record<string, Contraction[]>>({})
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [chartRange, setChartRange] = useState<7 | 30>(7)
+  const [activeTab, setActiveTab] = useState<string | null>('kicks')
 
   useEffect(() => {
     db.sessions.orderBy('startedAt').reverse().toArray().then(setKickSessions)
@@ -67,45 +67,34 @@ export default function History() {
   const chartData = getChartData(kickSessions, chartRange)
   const maxKicks = Math.max(...chartData.map(d => d.kicks), 1)
 
+  const indicatorColor = activeTab === 'contractions' ? 'bg-duo-orange' : 'bg-duo-green'
+
   return (
     <div className="max-w-lg mx-auto px-4 pb-4" style={{ paddingTop: 'calc(var(--safe-area-top) + 2rem)' }}>
       <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white mb-6 text-center">
         记录
       </h1>
 
-      {/* Tab Switcher — Duo style with bottom border accent */}
-      <div className="flex border-b-2 border-gray-200 dark:border-gray-700/60 mb-6">
-        <button
-          onClick={() => setTab('kicks')}
-          className={`flex-1 pb-3 text-sm font-bold uppercase tracking-wider transition-colors relative ${
-            tab === 'kicks'
-              ? 'text-duo-green'
-              : 'text-gray-400'
-          }`}
-        >
-          <IconChildHeadOutlineDuo18 size={16} className="inline-block align-[-2px] mr-1" /> 胎动
-          {tab === 'kicks' && (
-            <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-duo-green rounded-full -mb-[2px]" />
-          )}
-        </button>
-        <button
-          onClick={() => setTab('contractions')}
-          className={`flex-1 pb-3 text-sm font-bold uppercase tracking-wider transition-colors relative ${
-            tab === 'contractions'
-              ? 'text-duo-orange'
-              : 'text-gray-400'
-          }`}
-        >
-          <IconTimer2OutlineDuo18 size={16} className="inline-block align-[-2px] mr-1" /> 宫缩
-          {tab === 'contractions' && (
-            <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-duo-orange rounded-full -mb-[2px]" />
-          )}
-        </button>
-      </div>
+      <Tabs.Root defaultValue="kicks" onValueChange={setActiveTab}>
+        {/* Tab Switcher — Duo style with bottom border accent */}
+        <Tabs.List className="relative flex border-b-2 border-gray-200 dark:border-gray-700/60 mb-6">
+          <Tabs.Tab
+            value="kicks"
+            className="flex-1 pb-3 text-sm font-bold uppercase tracking-wider transition-colors text-gray-400 data-[selected]:text-duo-green outline-none cursor-pointer"
+          >
+            <IconChildHeadOutlineDuo18 size={16} className="inline-block align-[-2px] mr-1" /> 胎动
+          </Tabs.Tab>
+          <Tabs.Tab
+            value="contractions"
+            className="flex-1 pb-3 text-sm font-bold uppercase tracking-wider transition-colors text-gray-400 data-[selected]:text-duo-orange outline-none cursor-pointer"
+          >
+            <IconTimer2OutlineDuo18 size={16} className="inline-block align-[-2px] mr-1" /> 宫缩
+          </Tabs.Tab>
+          <Tabs.Indicator className={`absolute bottom-0 left-[var(--active-tab-left)] h-[3px] w-[var(--active-tab-width)] rounded-full -mb-[1px] transition-all duration-200 ease-out ${indicatorColor}`} />
+        </Tabs.List>
 
-      {/* Kicks Tab */}
-      {tab === 'kicks' && (
-        <>
+        {/* Kicks Tab */}
+        <Tabs.Panel value="kicks" className="outline-none">
           {kickSessions.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-5xl mb-4">📝</div>
@@ -185,16 +174,15 @@ export default function History() {
                     {/* Single grouped card with dividers */}
                     <div className="bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
                       {group.sessions.map((session, idx) => (
-                        <div key={session.id}>
+                        <Collapsible.Root
+                          key={session.id}
+                          open={expandedId === session.id}
+                          onOpenChange={(open) => setExpandedId(open ? session.id : null)}
+                        >
                           {idx > 0 && (
                             <div className="mx-4 border-t border-gray-100 dark:border-gray-700/40" />
                           )}
-                          <button
-                            onClick={() =>
-                              setExpandedId(expandedId === session.id ? null : session.id)
-                            }
-                            className="w-full px-4 py-3.5 flex items-center justify-between text-left"
-                          >
+                          <Collapsible.Trigger className="w-full px-4 py-3.5 flex items-center justify-between text-left cursor-pointer outline-none">
                             <div>
                               <p className="text-sm font-bold text-gray-800 dark:text-white">
                                 {formatTime(session.startedAt)}
@@ -216,14 +204,14 @@ export default function History() {
                                 {session.kickCount}
                               </span>
                               {session.goalReached && <span>🎉</span>}
-                              <span className="text-gray-300 dark:text-gray-600 text-xs">
+                              <span className="text-gray-300 dark:text-gray-600 text-xs transition-transform duration-200 group-data-[panel-open]:rotate-180">
                                 {expandedId === session.id ? '▲' : '▼'}
                               </span>
                             </div>
-                          </button>
+                          </Collapsible.Trigger>
 
-                          {expandedId === session.id && (
-                            <div className="px-4 pb-4 animate-slide-up">
+                          <Collapsible.Panel className="h-[var(--collapsible-panel-height)] overflow-hidden transition-all duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0">
+                            <div className="px-4 pb-4">
                               <div className="bg-gray-50 dark:bg-[#0f1629] rounded-xl p-4">
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
                                   时间线
@@ -245,8 +233,8 @@ export default function History() {
                                 </div>
                               </div>
                             </div>
-                          )}
-                        </div>
+                          </Collapsible.Panel>
+                        </Collapsible.Root>
                       ))}
                     </div>
                   </div>
@@ -254,12 +242,10 @@ export default function History() {
               </div>
             </>
           )}
-        </>
-      )}
+        </Tabs.Panel>
 
-      {/* Contractions Tab */}
-      {tab === 'contractions' && (
-        <>
+        {/* Contractions Tab */}
+        <Tabs.Panel value="contractions" className="outline-none">
           {contractionSessions.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-5xl mb-4">📝</div>
@@ -280,18 +266,18 @@ export default function History() {
                     {/* Single grouped card with dividers */}
                     <div className="bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
                       {group.sessions.map((session, idx) => (
-                        <div key={session.id}>
+                        <Collapsible.Root
+                          key={session.id}
+                          open={expandedId === session.id}
+                          onOpenChange={(open) => {
+                            setExpandedId(open ? session.id : null)
+                            if (open) loadContractions(session.id)
+                          }}
+                        >
                           {idx > 0 && (
                             <div className="mx-4 border-t border-gray-100 dark:border-gray-700/40" />
                           )}
-                          <button
-                            onClick={() => {
-                              const newId = expandedId === session.id ? null : session.id
-                              setExpandedId(newId)
-                              if (newId) loadContractions(session.id)
-                            }}
-                            className="w-full px-4 py-3.5 flex items-center justify-between text-left"
-                          >
+                          <Collapsible.Trigger className="w-full px-4 py-3.5 flex items-center justify-between text-left cursor-pointer outline-none">
                             <div>
                               <p className="text-sm font-bold text-gray-800 dark:text-white">
                                 {formatTime(session.startedAt)}
@@ -324,39 +310,41 @@ export default function History() {
                                 {expandedId === session.id ? '▲' : '▼'}
                               </span>
                             </div>
-                          </button>
+                          </Collapsible.Trigger>
 
-                          {expandedId === session.id && contractions[session.id] && (
-                            <div className="px-4 pb-4 animate-slide-up">
-                              <div className="bg-gray-50 dark:bg-[#0f1629] rounded-xl p-4">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
-                                  宫缩详情
-                                </p>
-                                <div className="space-y-2">
-                                  {contractions[session.id].map((c, i) => (
-                                    <div key={c.id} className="flex items-center justify-between text-xs">
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-gray-400 font-mono w-14 shrink-0">
-                                          {formatTime(c.startedAt)}
-                                        </span>
-                                        <span className="w-2 h-2 rounded-full bg-duo-orange shrink-0" />
-                                        <span className="text-gray-600 dark:text-gray-400">
-                                          第 {i + 1} 次
-                                          {c.interval !== null && c.interval > 0 && (
-                                            <span className="text-gray-400"> · 间隔 {formatMs(c.interval)}</span>
-                                          )}
+                          <Collapsible.Panel className="h-[var(--collapsible-panel-height)] overflow-hidden transition-all duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0">
+                            {contractions[session.id] && (
+                              <div className="px-4 pb-4">
+                                <div className="bg-gray-50 dark:bg-[#0f1629] rounded-xl p-4">
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                    宫缩详情
+                                  </p>
+                                  <div className="space-y-2">
+                                    {contractions[session.id].map((c, i) => (
+                                      <div key={c.id} className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-3">
+                                          <span className="text-gray-400 font-mono w-14 shrink-0">
+                                            {formatTime(c.startedAt)}
+                                          </span>
+                                          <span className="w-2 h-2 rounded-full bg-duo-orange shrink-0" />
+                                          <span className="text-gray-600 dark:text-gray-400">
+                                            第 {i + 1} 次
+                                            {c.interval !== null && c.interval > 0 && (
+                                              <span className="text-gray-400"> · 间隔 {formatMs(c.interval)}</span>
+                                            )}
+                                          </span>
+                                        </div>
+                                        <span className="font-bold text-duo-orange">
+                                          {c.duration ? formatMs(c.duration) : '--'}
                                         </span>
                                       </div>
-                                      <span className="font-bold text-duo-orange">
-                                        {c.duration ? formatMs(c.duration) : '--'}
-                                      </span>
-                                    </div>
-                                  ))}
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
+                            )}
+                          </Collapsible.Panel>
+                        </Collapsible.Root>
                       ))}
                     </div>
                   </div>
@@ -364,8 +352,8 @@ export default function History() {
               </div>
             </>
           )}
-        </>
-      )}
+        </Tabs.Panel>
+      </Tabs.Root>
     </div>
   )
 }

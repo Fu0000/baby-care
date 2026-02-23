@@ -1,11 +1,14 @@
 import { useState } from 'react'
+import { RadioGroup } from '@base-ui/react/radio-group'
+import { Radio } from '@base-ui/react/radio'
+import { NumberField } from '@base-ui/react/number-field'
+import { AlertDialog } from '@base-ui/react/alert-dialog'
 import { getSettings, saveSettings, type Settings as SettingsType, type ColorMode } from '../lib/settings.ts'
 import { db } from '../lib/db.ts'
 
 export default function Settings() {
   const [settings, setSettings] = useState<SettingsType>(getSettings)
   const [exportDone, setExportDone] = useState(false)
-  const [clearConfirm, setClearConfirm] = useState(false)
 
   function update(patch: Partial<SettingsType>) {
     const next = { ...settings, ...patch }
@@ -56,17 +59,11 @@ export default function Settings() {
   }
 
   async function handleClear() {
-    if (!clearConfirm) {
-      setClearConfirm(true)
-      return
-    }
     await Promise.all([
       db.sessions.clear(),
       db.contractionSessions.clear(),
       db.contractions.clear(),
     ])
-    setClearConfirm(false)
-    alert('所有记录已清除')
   }
 
   return (
@@ -106,29 +103,31 @@ export default function Settings() {
 
         {/* Goal Count */}
         <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
-          <label className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-gray-800 dark:text-white">胎动目标次数</p>
               <p className="text-xs text-gray-400 mt-0.5">Cardiff 标准为 10 次</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => update({ goalCount: Math.max(1, settings.goalCount - 1) })}
-                className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center active:scale-90 transition-transform"
-              >
-                −
-              </button>
-              <span className="text-xl font-extrabold text-duo-green w-10 text-center">
-                {settings.goalCount}
-              </span>
-              <button
-                onClick={() => update({ goalCount: Math.min(50, settings.goalCount + 1) })}
-                className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center active:scale-90 transition-transform"
-              >
-                +
-              </button>
-            </div>
-          </label>
+            <NumberField.Root
+              value={settings.goalCount}
+              onValueChange={(val) => {
+                if (val !== null) update({ goalCount: val })
+              }}
+              min={1}
+              max={50}
+              step={1}
+            >
+              <NumberField.Group className="flex items-center gap-2">
+                <NumberField.Decrement className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center active:scale-90 transition-transform cursor-pointer">
+                  −
+                </NumberField.Decrement>
+                <NumberField.Input className="w-10 text-center text-xl font-extrabold text-duo-green bg-transparent border-0 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                <NumberField.Increment className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center active:scale-90 transition-transform cursor-pointer">
+                  +
+                </NumberField.Increment>
+              </NumberField.Group>
+            </NumberField.Root>
+          </div>
         </div>
 
         {/* Merge Window */}
@@ -139,21 +138,27 @@ export default function Settings() {
           <p className="text-xs text-gray-400 mb-3">
             窗口内的多次点击合并为 1 次有效胎动
           </p>
-          <div className="flex gap-2">
+          <RadioGroup
+            value={String(settings.mergeWindowMinutes)}
+            onValueChange={(val) => update({ mergeWindowMinutes: Number(val) })}
+            className="flex gap-2"
+          >
             {[3, 5, 10].map(minutes => (
-              <button
-                key={minutes}
-                onClick={() => update({ mergeWindowMinutes: minutes })}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              <label key={minutes} className="flex-1">
+                <Radio.Root
+                  value={String(minutes)}
+                  className="sr-only"
+                />
+                <span className={`block w-full py-2.5 rounded-xl text-sm font-bold text-center transition-colors cursor-pointer ${
                   settings.mergeWindowMinutes === minutes
                     ? 'bg-duo-green text-white'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                {minutes} 分钟
-              </button>
+                }`}>
+                  {minutes} 分钟
+                </span>
+              </label>
             ))}
-          </div>
+          </RadioGroup>
         </div>
       </div>
 
@@ -165,21 +170,27 @@ export default function Settings() {
         <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
           <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">外观模式</p>
           <p className="text-xs text-gray-400 mb-3">选择浅色、深色或跟随系统</p>
-          <div className="flex gap-2">
+          <RadioGroup
+            value={settings.colorMode}
+            onValueChange={(val) => update({ colorMode: val as ColorMode })}
+            className="flex gap-2"
+          >
             {([['system', '系统'], ['light', '浅色'], ['dark', '深色']] as const).map(([mode, label]) => (
-              <button
-                key={mode}
-                onClick={() => update({ colorMode: mode as ColorMode })}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              <label key={mode} className="flex-1">
+                <Radio.Root
+                  value={mode}
+                  className="sr-only"
+                />
+                <span className={`block w-full py-2.5 rounded-xl text-sm font-bold text-center transition-colors cursor-pointer ${
                   settings.colorMode === mode
                     ? 'bg-duo-green text-white'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                {label}
-              </button>
+                }`}>
+                  {label}
+                </span>
+              </label>
             ))}
-          </div>
+          </RadioGroup>
         </div>
       </div>
 
@@ -211,16 +222,33 @@ export default function Settings() {
       </p>
       <div className="space-y-3 mb-8">
         <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-duo-red/20 dark:border-duo-red/15">
-          <button
-            onClick={handleClear}
-            className={`w-full py-3 font-bold text-sm rounded-xl transition-colors ${
-              clearConfirm
-                ? 'bg-duo-red text-white'
-                : 'bg-duo-red/10 text-duo-red hover:bg-duo-red/20'
-            }`}
-          >
-            {clearConfirm ? '⚠️ 确认清除所有数据？再点一次确认' : '🗑️ 清除所有数据'}
-          </button>
+          <AlertDialog.Root>
+            <AlertDialog.Trigger className="w-full py-3 font-bold text-sm rounded-xl bg-duo-red/10 text-duo-red hover:bg-duo-red/20 transition-colors cursor-pointer">
+              🗑️ 清除所有数据
+            </AlertDialog.Trigger>
+            <AlertDialog.Portal>
+              <AlertDialog.Backdrop className="fixed inset-0 bg-black/50 transition-opacity duration-150 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+              <AlertDialog.Popup className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-3rem)] max-w-sm bg-white dark:bg-[#16213e] rounded-3xl p-6 text-center transition-all duration-150 data-[ending-style]:scale-90 data-[ending-style]:opacity-0 data-[starting-style]:scale-90 data-[starting-style]:opacity-0">
+                <AlertDialog.Title className="text-xl font-extrabold text-gray-800 dark:text-white mb-2">
+                  确认清除数据？
+                </AlertDialog.Title>
+                <AlertDialog.Description className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  此操作将删除所有胎动和宫缩记录，且无法恢复。
+                </AlertDialog.Description>
+                <div className="flex gap-3">
+                  <AlertDialog.Close className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm rounded-xl transition-colors cursor-pointer">
+                    取消
+                  </AlertDialog.Close>
+                  <AlertDialog.Close
+                    className="flex-1 py-3 bg-duo-red text-white font-bold text-sm rounded-xl active:scale-95 transition-all cursor-pointer"
+                    onClick={handleClear}
+                  >
+                    确认清除
+                  </AlertDialog.Close>
+                </div>
+              </AlertDialog.Popup>
+            </AlertDialog.Portal>
+          </AlertDialog.Root>
         </div>
       </div>
 

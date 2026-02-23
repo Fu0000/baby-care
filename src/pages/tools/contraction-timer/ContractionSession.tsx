@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { AlertDialog } from '@base-ui/react/alert-dialog'
 import { db, type Contraction } from '../../../lib/db.ts'
 import { triggerHaptic } from '../../../lib/haptics.ts'
 import { formatTime } from '../../../lib/time.ts'
@@ -169,27 +170,27 @@ export default function ContractionSession() {
 
   return (
     <div className="fixed inset-0 bg-white dark:bg-[#1a1a2e] flex flex-col" style={{ paddingTop: 'var(--safe-area-top)' }}>
-      {/* 5-1-1 Alert */}
-      {showAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6 animate-bounce-in">
-          <div className="bg-white dark:bg-[#16213e] rounded-3xl p-6 w-full max-w-sm text-center">
+      {/* 5-1-1 AlertDialog */}
+      <AlertDialog.Root open={showAlert} onOpenChange={setShowAlert}>
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop className="fixed inset-0 bg-black/50 transition-opacity duration-150 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+          <AlertDialog.Popup className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-3rem)] max-w-sm bg-white dark:bg-[#16213e] rounded-3xl p-6 text-center animate-bounce-in outline-none">
             <div className="text-5xl mb-3">🏥</div>
-            <h2 className="text-2xl font-extrabold text-duo-red mb-2">该去医院了！</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <AlertDialog.Title className="text-2xl font-extrabold text-duo-red mb-2">
+              该去医院了！
+            </AlertDialog.Title>
+            <AlertDialog.Description className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               宫缩符合 5-1-1 规则：间隔约 5 分钟，持续约 1 分钟，已持续超过 1 小时。
-            </p>
+            </AlertDialog.Description>
             <p className="text-xs text-gray-400 mb-6">
               请联系您的医生或前往医院。
             </p>
-            <button
-              onClick={() => setShowAlert(false)}
-              className="w-full py-3 bg-duo-red text-white font-bold rounded-2xl active:scale-95 transition-transform"
-            >
+            <AlertDialog.Close className="w-full py-3 bg-duo-red text-white font-bold rounded-2xl active:scale-95 transition-transform cursor-pointer">
               我知道了
-            </button>
-          </div>
-        </div>
-      )}
+            </AlertDialog.Close>
+          </AlertDialog.Popup>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">

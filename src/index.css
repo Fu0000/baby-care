@@ -28,7 +28,12 @@ html, body, #root {
   -webkit-tap-highlight-color: transparent;
 }
 
+#root {
+  isolation: isolate;
+}
+
 body {
+  position: relative;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
