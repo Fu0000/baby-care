@@ -5,7 +5,8 @@ export interface Settings {
   dueDate: string | null // ISO date string e.g. "2026-05-15"
 }
 
-const SETTINGS_KEY = 'kick-counter-settings'
+const SETTINGS_KEY = 'babycare-settings'
+const LEGACY_KEY = 'kick-counter-settings'
 
 const defaultSettings: Settings = {
   goalCount: 10,
@@ -15,7 +16,15 @@ const defaultSettings: Settings = {
 }
 
 export function getSettings(): Settings {
-  const raw = localStorage.getItem(SETTINGS_KEY)
+  let raw = localStorage.getItem(SETTINGS_KEY)
+  // Migrate from legacy key
+  if (!raw) {
+    raw = localStorage.getItem(LEGACY_KEY)
+    if (raw) {
+      localStorage.setItem(SETTINGS_KEY, raw)
+      localStorage.removeItem(LEGACY_KEY)
+    }
+  }
   if (!raw) return defaultSettings
   return { ...defaultSettings, ...JSON.parse(raw) }
 }

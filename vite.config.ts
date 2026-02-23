@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: '数胎动 · 宝宝助手',
+        name: '宝宝助手',
         short_name: '宝宝助手',
-        description: 'Duolingo 风格的孕期全程陪伴工具，记录胎动、宫缩，追踪宝宝健康。',
+        description: 'Duolingo 风格的孕期全程陪伴工具，数胎动、宫缩计时、待产包清单，一站式守护妈妈和宝宝。',
         theme_color: '#58CC02',
         background_color: '#ffffff',
         display: 'standalone',
