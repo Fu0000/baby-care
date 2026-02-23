@@ -186,6 +186,10 @@ Bold, left-aligned, no emoji prefix:
 
 Configured in `vite.config.ts`. Display mode is `standalone` (full-screen like native). Safe area insets handled via CSS env variables (`--safe-area-top`, `--safe-area-bottom`).
 
+## Tool Usage
+
+- **Always use Context7 MCP** (`resolve-library-id` → `query-docs`) when needing library/API documentation, code generation, setup or configuration steps — without the user having to explicitly ask. This ensures up-to-date docs are used instead of relying on training data.
+
 ## Roadmap Context
 
 See `ROADMAP.md` for planned features. Phase 1 (hub + contraction timer) is in progress. Future phases include hospital bag checklist, feeding log, diaper tracking, sleep tracking, growth curves, and vaccine calendar.
