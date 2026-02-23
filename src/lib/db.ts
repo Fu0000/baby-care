@@ -33,10 +33,21 @@ export interface ContractionSession {
   alertTriggered: boolean // 5-1-1 rule
 }
 
+export interface HospitalBagItem {
+  id: string
+  category: 'mom' | 'baby' | 'documents'
+  name: string
+  checked: boolean
+  isCustom: boolean
+  sortOrder: number
+  createdAt: number
+}
+
 const db = new Dexie('KickCounterDB') as Dexie & {
   sessions: EntityTable<KickSession, 'id'>
   contractionSessions: EntityTable<ContractionSession, 'id'>
   contractions: EntityTable<Contraction, 'id'>
+  hospitalBagItems: EntityTable<HospitalBagItem, 'id'>
 }
 
 db.version(1).stores({
@@ -47,6 +58,13 @@ db.version(2).stores({
   sessions: 'id, startedAt',
   contractionSessions: 'id, startedAt',
   contractions: 'id, sessionId, startedAt',
+})
+
+db.version(3).stores({
+  sessions: 'id, startedAt',
+  contractionSessions: 'id, startedAt',
+  contractions: 'id, sessionId, startedAt',
+  hospitalBagItems: 'id, category, sortOrder',
 })
 
 export { db }

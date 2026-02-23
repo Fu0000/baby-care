@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
+import { IconBagCheckOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { db, type KickSession } from '../lib/db.ts'
 import { getDaysUntilDue, getWeeksPregnant } from '../lib/settings.ts'
 import { isSameDay } from '../lib/time.ts'
@@ -32,9 +33,9 @@ const allTools: ToolCard[] = [
   {
     id: 'hospital-bag',
     title: '待产包',
-    icon: <span className="text-[32px]">🎒</span>,
+    icon: <IconBagCheckOutlineDuo18 size={32} className="text-duo-orange" />,
     path: '/tools/hospital-bag',
-    available: false,
+    available: true,
   },
   {
     id: 'feeding-log',
@@ -189,7 +190,7 @@ export default function Home() {
               <button
                 key={tool.id}
                 onClick={() => tool.available && navigate(tool.path)}
-                className={`rounded-2xl py-5 px-4 flex flex-col items-center justify-center text-center transition-all duration-150 ${
+                className={`rounded-2xl py-5 px-4 min-h-[7.5rem] flex flex-col items-center justify-center text-center transition-all duration-150 ${
                   tool.available
                     ? 'bg-white dark:bg-[#16213e] border border-gray-200 dark:border-gray-700/60 active:scale-[0.96]'
                     : 'bg-gray-50 dark:bg-gray-800/30 border border-dashed border-gray-200 dark:border-gray-700 opacity-40'

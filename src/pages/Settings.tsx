@@ -26,12 +26,13 @@ export default function Settings() {
   }
 
   async function handleExport() {
-    const [sessions, contractionSessions, contractions] = await Promise.all([
+    const [sessions, contractionSessions, contractions, hospitalBagItems] = await Promise.all([
       db.sessions.toArray(),
       db.contractionSessions.toArray(),
       db.contractions.toArray(),
+      db.hospitalBagItems.toArray(),
     ])
-    const data = JSON.stringify({ sessions, contractionSessions, contractions }, null, 2)
+    const data = JSON.stringify({ sessions, contractionSessions, contractions, hospitalBagItems }, null, 2)
     const blob = new Blob([data], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -61,6 +62,7 @@ export default function Settings() {
         if (data.sessions) { await db.sessions.bulkPut(data.sessions); count += data.sessions.length }
         if (data.contractionSessions) { await db.contractionSessions.bulkPut(data.contractionSessions); count += data.contractionSessions.length }
         if (data.contractions) { await db.contractions.bulkPut(data.contractions); count += data.contractions.length }
+        if (data.hospitalBagItems) { await db.hospitalBagItems.bulkPut(data.hospitalBagItems); count += data.hospitalBagItems.length }
       }
       sileo.success({ title: '导入成功', description: `共导入 ${count} 条记录` })
     }
@@ -72,6 +74,7 @@ export default function Settings() {
       db.sessions.clear(),
       db.contractionSessions.clear(),
       db.contractions.clear(),
+      db.hospitalBagItems.clear(),
     ])
     sileo.success({ title: '已清除', description: '所有记录已删除' })
   }
@@ -265,7 +268,7 @@ export default function Settings() {
                   确认清除数据？
                 </AlertDialog.Title>
                 <AlertDialog.Description className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                  此操作将删除所有胎动和宫缩记录，且无法恢复。
+                  此操作将删除所有胎动、宫缩和待产包记录，且无法恢复。
                 </AlertDialog.Description>
                 <div className="flex gap-3">
                   <AlertDialog.Close className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm rounded-xl transition-colors cursor-pointer">

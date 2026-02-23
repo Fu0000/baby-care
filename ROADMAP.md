@@ -21,10 +21,10 @@
 - [x] TipBanner muted styling
 - [x] Personal footer ("Made with care by Cali")
 
-## Phase 2: 待产包清单
-- [ ] Checklist 组件（妈妈包/宝宝包/证件包分组）
-- [ ] 预置常见物品，支持自定义添加
-- [ ] 进度百分比显示
+## Phase 2: 待产包清单 ✅ COMPLETE
+- [x] Checklist 组件（妈妈包/宝宝包/证件包分组）
+- [x] 预置常见物品，支持自定义添加
+- [x] 进度百分比显示
 
 ## Phase 3: 喂奶记录
 - [ ] 左/右侧切换 + 计时

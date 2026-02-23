@@ -9,6 +9,7 @@ import KickHome from './pages/tools/kick-counter/KickHome.tsx'
 import KickSession from './pages/tools/kick-counter/KickSession.tsx'
 import ContractionHome from './pages/tools/contraction-timer/ContractionHome.tsx'
 import ContractionSession from './pages/tools/contraction-timer/ContractionSession.tsx'
+import HospitalBagHome from './pages/tools/hospital-bag/HospitalBagHome.tsx'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/tools/kick-counter" element={<KickHome />} />
         <Route path="/tools/contraction-timer" element={<ContractionHome />} />
+        <Route path="/tools/hospital-bag" element={<HospitalBagHome />} />
       </Route>
       <Route path="/tools/kick-counter/session" element={<KickSession />} />
       <Route path="/tools/contraction-timer/session/:sessionId" element={<ContractionSession />} />
