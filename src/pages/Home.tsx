@@ -21,7 +21,7 @@ const tools: ToolCard[] = [
     id: 'kick-counter',
     title: '数胎动',
     subtitle: 'Cardiff Count-to-10',
-    emoji: '🦒',
+    emoji: '🦶',
     color: '#58CC02',
     bgColor: 'bg-duo-green/10',
     shadowColor: 'shadow-duo-green/20',

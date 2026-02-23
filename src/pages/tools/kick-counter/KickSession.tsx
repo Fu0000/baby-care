@@ -248,7 +248,7 @@ export default function KickSession() {
           )}
           <ProgressRing progress={progress} size={220} strokeWidth={10}>
             <div className="flex flex-col items-center">
-              <span className="text-5xl mb-1">👶</span>
+              <span className="text-5xl mb-1">🦶</span>
               <span className="text-4xl font-extrabold text-duo-green">
                 ×{kickCount}
               </span>
