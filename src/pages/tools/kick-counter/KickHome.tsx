@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AlertDialog } from '@base-ui/react/alert-dialog'
 import { db, type KickSession } from '../../../lib/db.ts'
 import { getSettings } from '../../../lib/settings.ts'
 import { formatDate } from '../../../lib/time.ts'
@@ -12,6 +13,7 @@ export default function KickHome() {
   const [todaySessions, setTodaySessions] = useState<KickSession[]>([])
   const [activeSession, setActiveSession] = useState<KickSession | null>(null)
   const [streak, setStreak] = useState(0)
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const settings = getSettings()
 
   useEffect(() => {
@@ -51,6 +53,14 @@ export default function KickHome() {
       goalReached: false,
     })
     navigate('/tools/kick-counter/session/' + id)
+  }
+
+  async function handleDeleteSession() {
+    if (!deletingSessionId) return
+    await db.sessions.delete(deletingSessionId)
+    setTodaySessions(prev => prev.filter(s => s.id !== deletingSessionId))
+    if (activeSession?.id === deletingSessionId) setActiveSession(null)
+    setDeletingSessionId(null)
   }
 
   const todayKicks = todaySessions.reduce((sum, s) => sum + s.kickCount, 0)
@@ -154,12 +164,20 @@ export default function KickHome() {
                       : '进行中'}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-extrabold text-duo-green">
-                    {session.kickCount}
-                  </span>
-                  <span className="text-xs text-gray-400">次</span>
-                  {session.goalReached && <span>🎉</span>}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-extrabold text-duo-green">
+                      {session.kickCount}
+                    </span>
+                    <span className="text-xs text-gray-400">次</span>
+                    {session.goalReached && <span>🎉</span>}
+                  </div>
+                  <button
+                    onClick={() => setDeletingSessionId(session.id)}
+                    className="text-gray-300 dark:text-gray-600 hover:text-duo-red dark:hover:text-duo-red active:text-duo-red transition-colors p-1 -m-1"
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
             ))}
@@ -167,8 +185,43 @@ export default function KickHome() {
         </div>
       )}
 
+      {/* View all records */}
+      <button
+        onClick={() => navigate('/history')}
+        className="w-full py-3.5 text-sm font-bold text-gray-400 dark:text-gray-500 bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 active:scale-95 transition-transform cursor-pointer mb-6"
+      >
+        查看全部记录 →
+      </button>
+
       <TipBanner />
       </div>
+
+      {/* Delete Session Confirmation */}
+      <AlertDialog.Root open={deletingSessionId !== null} onOpenChange={(open) => { if (!open) setDeletingSessionId(null) }}>
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop className="fixed inset-0 bg-black/40 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+          <AlertDialog.Popup className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] rounded-t-3xl px-6 pt-5 pb-8 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full outline-none z-50">
+            <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-5" />
+            <AlertDialog.Title className="text-lg font-extrabold text-gray-800 dark:text-white text-center mb-2">
+              删除这条胎动记录？
+            </AlertDialog.Title>
+            <AlertDialog.Description className="text-sm text-gray-400 dark:text-gray-500 text-center mb-6">
+              删除后无法恢复
+            </AlertDialog.Description>
+            <div className="flex gap-3">
+              <AlertDialog.Close className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl active:scale-95 transition-transform cursor-pointer">
+                取消
+              </AlertDialog.Close>
+              <button
+                onClick={handleDeleteSession}
+                className="flex-1 py-3.5 bg-duo-red text-white font-bold rounded-2xl border-b-4 border-red-700 active:scale-95 transition-all cursor-pointer"
+              >
+                删除
+              </button>
+            </div>
+          </AlertDialog.Popup>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
     </div>
   )
 }

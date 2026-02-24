@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Tabs } from '@base-ui/react/tabs'
 import { Collapsible } from '@base-ui/react/collapsible'
+import { AlertDialog } from '@base-ui/react/alert-dialog'
 import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconGlassFillDuo18 } from 'nucleo-ui-fill-duo-18'
@@ -29,6 +30,7 @@ export default function History() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [chartRange, setChartRange] = useState<7 | 30>(7)
   const [activeTab, setActiveTab] = useState<string | null>('kicks')
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
 
   useEffect(() => {
     db.sessions.orderBy('startedAt').reverse().toArray().then(setKickSessions)
@@ -40,6 +42,14 @@ export default function History() {
     if (contractions[sessionId]) return
     const list = await db.contractions.where('sessionId').equals(sessionId).sortBy('startedAt')
     setContractions(prev => ({ ...prev, [sessionId]: list }))
+  }
+
+  async function handleDeleteSession() {
+    if (!deletingSessionId) return
+    await db.sessions.delete(deletingSessionId)
+    setKickSessions(prev => prev.filter(s => s.id !== deletingSessionId))
+    setExpandedId(null)
+    setDeletingSessionId(null)
   }
 
   // Kick sessions grouped by date
@@ -280,6 +290,12 @@ export default function History() {
                                   ))}
                                 </div>
                               </div>
+                              <button
+                                onClick={() => setDeletingSessionId(session.id)}
+                                className="w-full mt-3 py-2.5 text-sm font-bold text-duo-red bg-duo-red/10 rounded-xl active:scale-95 transition-transform cursor-pointer"
+                              >
+                                删除此记录
+                              </button>
                             </div>
                           </Collapsible.Panel>
                         </Collapsible.Root>
@@ -473,6 +489,33 @@ export default function History() {
         </Tabs.Panel>
       </Tabs.Root>
       </div>
+
+      {/* Delete Session Confirmation */}
+      <AlertDialog.Root open={deletingSessionId !== null} onOpenChange={(open) => { if (!open) setDeletingSessionId(null) }}>
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop className="fixed inset-0 bg-black/40 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+          <AlertDialog.Popup className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] rounded-t-3xl px-6 pt-5 pb-8 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full outline-none z-50">
+            <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-5" />
+            <AlertDialog.Title className="text-lg font-extrabold text-gray-800 dark:text-white text-center mb-2">
+              删除这条胎动记录？
+            </AlertDialog.Title>
+            <AlertDialog.Description className="text-sm text-gray-400 dark:text-gray-500 text-center mb-6">
+              删除后无法恢复
+            </AlertDialog.Description>
+            <div className="flex gap-3">
+              <AlertDialog.Close className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl active:scale-95 transition-transform cursor-pointer">
+                取消
+              </AlertDialog.Close>
+              <button
+                onClick={handleDeleteSession}
+                className="flex-1 py-3.5 bg-duo-red text-white font-bold rounded-2xl border-b-4 border-red-700 active:scale-95 transition-all cursor-pointer"
+              >
+                删除
+              </button>
+            </div>
+          </AlertDialog.Popup>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
     </div>
   )
 }
