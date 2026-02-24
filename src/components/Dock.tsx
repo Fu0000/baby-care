@@ -6,6 +6,7 @@ import { IconTimelineVertical } from "nucleo-glass";
 import { IconGear } from "nucleo-glass";
 import { IconFeather } from "nucleo-glass";
 import { getOrderedTools } from "../lib/tools.tsx";
+import { useDockGesture } from "../hooks/useDockGesture.ts";
 
 const navItems = [
   { to: "/", label: "首页", Icon: IconHouse },
@@ -13,10 +14,16 @@ const navItems = [
   { to: "/settings", label: "设置", Icon: IconGear },
 ];
 
+const iconGradientStyle = {
+  "--nc-gradient-1-color-1": "var(--dock-accent-1)",
+  "--nc-gradient-1-color-2": "var(--dock-accent-2)",
+} as React.CSSProperties;
+
 export default function Dock() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const tools = getOrderedTools();
+  const { navRef, getItemProps } = useDockGesture(navItems, navigate);
 
   return (
     <>
@@ -24,52 +31,52 @@ export default function Dock() {
       <div className="fixed bottom-0 inset-x-0 h-16 bg-gradient-to-t from-gray-50 dark:from-[#1a1a2e] to-transparent pointer-events-none z-50" />
       {/* Floating dock tab bar + action button */}
       <div className="fixed bottom-4 pwa:bottom-4 inset-x-0 z-50 flex items-center justify-between px-4 gap-2">
-        <nav className="floating-dock flex flex-1 items-center gap-2 px-1 py-1 rounded-[30px] bg-white/80 dark:bg-[#16213e]/85 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/50">
-          {navItems.map(({ to, label, Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/"}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-1.5 w-auto flex-1 h-13 rounded-full transition-all duration-200 ${
-                  isActive
-                    ? "bg-gray-100 text-gray-800 dark:bg-white/10 dark:text-white"
-                    : "text-gray-400 dark:text-gray-500 active:scale-90"
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon
-                    size={26}
-                    color="currentColor"
-                    style={
-                      {
-                        "--nc-gradient-1-color-1": "var(--dock-accent-1)",
-                        "--nc-gradient-1-color-2": "var(--dock-accent-2)",
-                      } as React.CSSProperties
-                    }
-                  />
-                  <span className="text-[10px] font-bold leading-none">
-                    {label}
-                  </span>
-                </>
-              )}
-            </NavLink>
-          ))}
+        <nav
+          ref={navRef as React.RefObject<HTMLElement>}
+          className="floating-dock flex flex-1 items-center gap-2 px-1 py-1 rounded-[30px] bg-white/80 dark:bg-[#16213e]/85 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/50"
+        >
+          {navItems.map(({ to, label, Icon }, index) => {
+            const itemProps = getItemProps(index);
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/"}
+                data-dock-item={itemProps["data-dock-item"]}
+                data-dock-index={itemProps["data-dock-index"]}
+                onClick={itemProps.onClick}
+                style={itemProps.style}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center gap-1.5 w-auto flex-1 h-13 rounded-full transition-all duration-200 ${
+                    isActive
+                      ? "bg-gray-100 text-gray-800 dark:bg-white/10 dark:text-white"
+                      : "text-gray-400 dark:text-gray-500 active:scale-90"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <Icon
+                      size={26}
+                      color="currentColor"
+                      style={{
+                        ...iconGradientStyle,
+                        opacity: isActive ? 1 : 0.95,
+                      }}
+                    />
+                    <span className="text-[10px] font-bold leading-none">
+                      {label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
         {/* Quick tools action button */}
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Trigger className="flex items-center justify-center size-15 rounded-full bg-white/80 dark:bg-[#16213e]/85 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 active:scale-90 transition-all duration-200">
-            <IconFeather
-              size={26}
-              style={
-                {
-                  "--nc-gradient-1-color-1": "var(--dock-accent-1)",
-                  "--nc-gradient-1-color-2": "var(--dock-accent-2)",
-                } as React.CSSProperties
-              }
-            />
+            <IconFeather size={26} style={iconGradientStyle} />
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Backdrop className="fixed inset-0 bg-black/40 z-[100] transition-opacity duration-300 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0" />

@@ -144,6 +144,9 @@ body {
 .floating-dock {
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     backdrop-filter: blur(24px) saturate(180%);
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* Subtle card textures — faint dot grids */
