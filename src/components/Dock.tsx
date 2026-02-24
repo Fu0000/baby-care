@@ -76,7 +76,7 @@ export default function Dock() {
         </nav>
         {/* Quick tools action button */}
         <Dialog.Root open={open} onOpenChange={setOpen}>
-          <Dialog.Trigger className="flex size-15 items-center justify-center rounded-full border border-gray-200/70 bg-white/80 text-gray-400 backdrop-blur-xl transition-all duration-200 active:scale-90 dark:border-gray-700/50 dark:bg-[#16213e]/85 dark:text-gray-500">
+          <Dialog.Trigger className="flex size-16 items-center justify-center rounded-full border border-gray-200/70 bg-white/80 text-gray-400 backdrop-blur-xl transition-all duration-200 active:scale-90 dark:border-gray-700/50 dark:bg-[#16213e]/85 dark:text-gray-500">
             <IconFeather size={28} style={iconGradientStyle} />
           </Dialog.Trigger>
           <Dialog.Portal>
