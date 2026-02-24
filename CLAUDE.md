@@ -18,10 +18,10 @@ pnpm preview      # Preview production build locally
 - **React Router DOM 7** with hash-based routing (`HashRouter` in `main.tsx`)
 - **@base-ui/react** — headless UI components (Tabs, Collapsible, Dialog, AlertDialog, Progress, NumberField, Toggle, ToggleGroup, ScrollArea)
 - **react-day-picker** — date picker (zh-CN locale, used in bottom sheet Dialog)
-- **sileo** — toast notifications
+- **sileo** — toast notifications (`sileo.success()`, `sileo.error()`, `sileo.info()`)
 - **Dexie.js 4** (IndexedDB) for persistent data, **localStorage** for settings
 - **vite-plugin-pwa** for offline-first PWA with Workbox caching
-- **Nucleo icons** — `nucleo-glass` (nav), `nucleo-ui-outline-duo-18` (feature icons)
+- **Nucleo icons** — `nucleo-glass` (dock nav + action button), `nucleo-ui-outline-duo-18` / `nucleo-ui-fill-duo-18` (feature tool icons)
 - **pnpm** as package manager
 
 ## Architecture
@@ -32,48 +32,33 @@ This is 宝宝助手 (BabyCare) — a Chinese-only pregnancy/baby care PWA with 
 
 Routes are defined in `src/App.tsx`. Two kinds:
 
-- **Layout routes** (wrapped in `<Layout>` with bottom nav + ScrollArea): `/`, `/history`, `/settings`, `/tools/*` home pages
-- **Full-screen session routes** (no nav, no Layout): `/tools/kick-counter/session`, `/tools/contraction-timer/session/:sessionId`
+- **Layout routes** (wrapped in `<Layout>` with Dock + ScrollArea): `/`, `/history`, `/settings`, `/tools/*` home pages
+- **Full-screen session routes** (no Dock, no Layout): `/tools/kick-counter/session`, `/tools/contraction-timer/session/:sessionId`, `/tools/feeding-log/session/:recordId`
 
 When navigating away from sessions, use `navigate(path, { replace: true })` to prevent back-button confusion.
 
 ### Data Layer
 
-- **Dexie database** (`src/lib/db.ts`): `KickCounterDB` with tables `sessions`, `contractionSessions`, `contractions`. Schema versions are incremental — always add a new `db.version(N+1)` when adding tables/indexes.
+- **Dexie database** (`src/lib/db.ts`): `KickCounterDB` with tables `sessions`, `contractionSessions`, `contractions`, `hospitalBagItems`, `feedingRecords`. Schema versions are incremental — always add a new `db.version(N+1)` when adding tables/indexes.
 - **Settings** (`src/lib/settings.ts`): stored in localStorage under `babycare-settings`. Includes `goalCount`, `mergeWindowMinutes`, `colorMode`, `dueDate`. Also exports helpers `getDaysUntilDue()` and `getWeeksPregnant()`.
 
 ### File Organization
 
-- `src/components/` — reusable UI components (Layout, StickyHeader, ProgressRing, TipBanner)
-- `src/lib/` — pure utilities with no React dependencies (db, settings, time, haptics, tips, encouragements)
+- `src/components/` — reusable UI components (Layout, Dock, StickyHeader, ProgressRing, TipBanner)
+- `src/hooks/` — custom React hooks (useDockGesture)
+- `src/lib/` — pure utilities (db, settings, time, haptics, tips, encouragements, tools, feeding-helpers, hospital-bag-presets)
 - `src/pages/` — route-level components
-- `src/pages/tools/<feature>/` — each tool gets its own subdirectory (kick-counter, contraction-timer)
+- `src/pages/tools/<feature>/` — each tool gets its own subdirectory (kick-counter, contraction-timer, hospital-bag, feeding-log)
 
 ### Key Conventions
 
 - Components are **default exports**: `export default function ComponentName()`
+- Hooks are **named exports**: `export function useHookName()`
 - Imports use **explicit `.ts`/`.tsx` extensions**
 - Timestamps are **milliseconds** (`Date.now()`), IDs are **`crypto.randomUUID()`**
 - No state management library — React hooks + local component state only
 - Color mode via `.dark` class toggle on `<html>` — supports system/light/dark (see `applyColorMode()`)
-- Use `sileo.success()` / `sileo.error()` for user feedback instead of `alert()`
-
-### Base UI Component Usage
-
-The app uses `@base-ui/react` headless components throughout. Key patterns:
-
-| Component | Where Used | Notes |
-|-----------|-----------|-------|
-| `Tabs` | History.tsx | `Tabs.Indicator` with dynamic color (green/orange) |
-| `Collapsible` | History.tsx | Accordion-style session expand/collapse with height animation |
-| `Dialog` | KickSession.tsx, Settings.tsx | Completion overlay, date picker bottom sheet |
-| `AlertDialog` | ContractionSession.tsx, Settings.tsx | 5-1-1 rule alert, clear data confirmation |
-| `Progress` | KickSession.tsx | Kick count progress bar |
-| `NumberField` | Settings.tsx | Goal count stepper (1-50) |
-| `ToggleGroup` + `Toggle` | Settings.tsx | Segmented controls (merge window, color mode) |
-| `ScrollArea` | Layout.tsx | Main content scroll with custom scrollbar |
-
-Style active states via `data-[pressed]`, `data-[selected]`, `data-[active]` attributes. Animations via `data-[starting-style]` / `data-[ending-style]`.
+- Use `sileo.success()` / `sileo.error()` / `sileo.info()` for user feedback instead of `alert()`
 
 ### Design System
 
@@ -99,6 +84,14 @@ Duolingo-inspired, flat, clean, and playful. Defined in `src/index.css` and appl
 | `duo-yellow`       | `#FFC800` | Celebrations, highlights                 |
 | `duo-gray`         | `#E5E5E5` | Disabled states, separators              |
 
+#### CSS Variables (`src/index.css`)
+
+| Variable | Light | Dark | Usage |
+|----------|-------|------|-------|
+| `--sileo-fill` | `#f3f3f3` | `#161616` | Toast notification SVG fill |
+| `--dock-accent-1` | `#1a1a1a` | `#ffffff` | Nucleo glass icon gradient stop 1 |
+| `--dock-accent-2` | `#404040` | `#d4d4d4` | Nucleo glass icon gradient stop 2 |
+
 #### Cards
 
 - Background: `bg-white dark:bg-[#16213e]`
@@ -107,108 +100,24 @@ Duolingo-inspired, flat, clean, and playful. Defined in `src/index.css` and appl
 - Padding: `p-5` (standard) or `p-4` (compact lists)
 - No shadows ever
 
-#### Sticky Header (`StickyHeader.tsx`)
-
-All scrollable pages use the `StickyHeader` component — `sticky top-0` with 4-layer progressive backdrop blur (1px → 2px → 4px → 8px), each masked to a vertical band for smooth fade-out. Transparent background, no solid color.
-
-```tsx
-<StickyHeader>
-  <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white text-center">Title</h1>
-</StickyHeader>
-```
-
-For sub-pages with back button:
-```tsx
-<StickyHeader>
-  <div className="relative flex items-center justify-center">
-    <button className="absolute left-0 ...">← 返回</button>
-    <h1 className="text-xl font-extrabold ...">Title</h1>
-  </div>
-</StickyHeader>
-```
-
-#### Stat Capsules (Home Page)
-
-Pill-shaped tags with tinted backgrounds:
-```
-<div class="flex items-center gap-1.5 bg-duo-orange/10 rounded-full px-3.5 py-2">
-  <span class="text-sm">🔥</span>
-  <span class="text-sm font-extrabold text-duo-orange">{value}</span>
-  <span class="text-xs font-bold text-gray-500 dark:text-gray-400">label</span>
-</div>
-```
-Label text uses `text-gray-500 dark:text-gray-400` (not colored) for accessibility.
-
-#### Featured Due Date Card
-
-Full-width rounded card above stat pills:
-```
-<div class="flex items-center justify-between rounded-2xl px-5 py-3.5 bg-duo-purple/10">
-  <div> <!-- label + weeks --> </div>
-  <span class="text-2xl font-extrabold text-duo-purple">{days}</span>
-</div>
-```
-
 #### Section Headers
 
-Uppercase, tiny, bold, gray — like Duolingo's "OVERVIEW":
+Uppercase, tiny, bold, gray:
 ```
 <p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
   SECTION NAME
 </p>
 ```
 
-#### Primary Action Buttons (CTAs)
-
-Full-width, solid color, bottom border for depth:
-```
-<button class="w-full py-5 bg-duo-green text-white text-xl font-extrabold rounded-2xl border-b-4 border-duo-green-dark active:scale-95 transition-all">
-```
-
-#### Segmented Controls (ToggleGroup)
-
-iOS-style segmented picker with shared background track:
-```tsx
-<ToggleGroup className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5">
-  <Toggle className="flex-1 py-2 rounded-[10px] text-sm font-bold text-center ... data-[pressed]:bg-duo-green data-[pressed]:text-white">
-    Label
-  </Toggle>
-</ToggleGroup>
-```
-
-#### Grouped Lists (Duo Pattern)
-
-Multiple items in one card with dividers:
-```
-<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-  {items.map((item, idx) => (
-    <>
-      {idx > 0 && <div class="mx-5 border-t border-gray-100 dark:border-gray-700/40" />}
-      <button class="w-full px-5 py-4 flex items-center justify-between ...">
-    </>
-  ))}
-</div>
-```
-
 #### Bottom Sheet Dialog
 
-For pickers and confirmations that slide up from bottom:
+For pickers, tool picker, and confirmations that slide up from bottom:
 ```tsx
-<Dialog.Popup className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] rounded-t-3xl px-2 pt-5 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full">
-  <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" /> <!-- drag handle -->
+<Dialog.Popup className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] rounded-t-3xl px-5 pt-5 pb-8 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full">
+  <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-5" />
   ...
 </Dialog.Popup>
 ```
-
-#### Floating Dock (Layout)
-
-Bottom nav with concentric corners. Outer `rounded-[30px]` = inner icon `rounded-full` (24px) + padding (6px).
-
-- Icons: 30px Nucleo glass icons
-- Gap: `gap-2`, padding: `px-1.5 py-1.5`
-- PWA: `pwa:bottom-0` (flush to screen edge)
-- Browser: `bottom-4`
-- Backdrop: `bg-white/80 backdrop-blur-xl border border-gray-200/70`
 
 #### Dark Mode Tokens
 
@@ -221,19 +130,27 @@ Bottom nav with concentric corners. Outer `rounded-[30px]` = inner icon `rounded
 | Text muted  | `text-gray-400`      | `text-gray-500`        |
 | Input bg    | `bg-gray-100`        | `bg-gray-800`          |
 
-#### Animations (`src/index.css`)
+### Dock (`src/components/Dock.tsx`)
 
-- `animate-bounce-in` — entry pop for celebrations
-- `animate-pulse-ring` — pulsing ring on active recording
-- `animate-float` — gentle up/down float for mascot
-- `animate-slide-up` — content reveal from below
-- `animate-wiggle` — playful wiggle for attention
+Floating bottom nav with frosted glass styling + separate action button.
+
+**Structure**: Nav bar (left, `flex-1`) + action button (right). Container uses `justify-between px-4 gap-2`.
+
+**Nav items**: 3 NavLinks (首页, 记录, 设置) with Nucleo glass icons + text labels. Active state uses theme-inverted colors (`text-gray-800 dark:text-white`), inactive uses `text-gray-400 dark:text-gray-500`.
+
+**Action button**: Opens a Dialog bottom sheet with tool picker grid (shared tools from `src/lib/tools.tsx`).
+
+**Swipe gesture** (`src/hooks/useDockGesture.ts`): Horizontal swipe across nav items shifts focus with spring scale animation (`cubic-bezier(0.34, 1.56, 0.64, 1)`) and haptic feedback. Tap behavior preserved — gesture only activates on horizontal movement >8px.
+
+**Icon theming**: Nucleo glass icons use `--nc-gradient-1-color-1` / `--nc-gradient-1-color-2` CSS variables (set via `--dock-accent-1`/`--dock-accent-2`) for theme-aware accent gradients.
 
 ### Business Logic
 
 - **Kick counter**: Configurable merge window (3/5/10 min) — first tap in a window increments `kickCount`, subsequent taps within the window are recorded but don't increment. Cardiff Count-to-10 method.
 - **Contraction timer**: tracks duration + interval per contraction. 5-1-1 rule alert (contractions ≤5 min apart, ≥1 min long, for ≥1 hour).
-- **Smart tool ordering**: `getWeeksPregnant()` determines tool grid order. Before 28 weeks → contraction timer first. 28+ weeks → kick counter first. Past due date → contraction timer first.
+- **Smart tool ordering** (`src/lib/tools.tsx`): `getWeeksPregnant()` determines tool grid order. Before 28 weeks → contraction timer first. 28+ weeks → kick counter first. Past due date → contraction timer first.
+- **Hospital bag**: checklist with preset items, tracks completion.
+- **Feeding log**: breast + bottle tracking with side switching and duration.
 
 ### PWA
 
@@ -242,7 +159,3 @@ Configured in `vite.config.ts`. Display mode is `standalone` (full-screen like n
 ## Tool Usage
 
 - **Always use Context7 MCP** (`resolve-library-id` → `query-docs`) when needing library/API documentation, code generation, setup or configuration steps — without the user having to explicitly ask. This ensures up-to-date docs are used instead of relying on training data.
-
-## Roadmap Context
-
-See `docs/ROADMAP.md` for planned features. Phase 1 (hub + contraction timer) and Phase 1.5 (UI polish + Base UI migration) are complete. Next up is Phase 2 (hospital bag checklist).

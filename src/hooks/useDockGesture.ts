@@ -86,6 +86,11 @@ export function useDockGesture(
   focusedIndexRef.current = focusedIndex
 
   const reset = useCallback(() => {
+    const nav = navRef.current
+    const pid = pointerIdRef.current
+    if (nav && pid !== null && nav.hasPointerCapture(pid)) {
+      nav.releasePointerCapture(pid)
+    }
     phaseRef.current = 'idle'
     pointerIdRef.current = null
     setGestureActive(false)
