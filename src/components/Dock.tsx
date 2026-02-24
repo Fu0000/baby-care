@@ -33,14 +33,23 @@ export default function Dock() {
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center gap-1.5 w-auto flex-1 h-13 rounded-full transition-all duration-200 ${
                   isActive
-                    ? "bg-duo-green/12 text-duo-green dark:bg-duo-green/20"
+                    ? "bg-gray-100 text-gray-800 dark:bg-white/10 dark:text-white"
                     : "text-gray-400 dark:text-gray-500 active:scale-90"
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon size={26} style={{ opacity: isActive ? 1 : 0.95 }} />
+                  <Icon
+                    size={26}
+                    color="currentColor"
+                    style={
+                      {
+                        "--nc-gradient-1-color-1": "var(--dock-accent-1)",
+                        "--nc-gradient-1-color-2": "var(--dock-accent-2)",
+                      } as React.CSSProperties
+                    }
+                  />
                   <span className="text-[10px] font-bold leading-none">
                     {label}
                   </span>
@@ -52,7 +61,15 @@ export default function Dock() {
         {/* Quick tools action button */}
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Trigger className="flex items-center justify-center size-15 rounded-full bg-white/80 dark:bg-[#16213e]/85 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 active:scale-90 transition-all duration-200">
-            <IconFeather size={26} />
+            <IconFeather
+              size={26}
+              style={
+                {
+                  "--nc-gradient-1-color-1": "var(--dock-accent-1)",
+                  "--nc-gradient-1-color-2": "var(--dock-accent-2)",
+                } as React.CSSProperties
+              }
+            />
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Backdrop className="fixed inset-0 bg-black/40 z-[100] transition-opacity duration-300 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0" />

@@ -22,10 +22,14 @@
     --safe-area-top: env(safe-area-inset-top, 0px);
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
     --sileo-fill: #f3f3f3;
+    --dock-accent-1: #1a1a1a;
+    --dock-accent-2: #404040;
 }
 
 .dark {
     --sileo-fill: #161616;
+    --dock-accent-1: #d4d4d4;
+    --dock-accent-2: #eeeeee;
 }
 
 html,
