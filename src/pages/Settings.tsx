@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useRegisterSW } from 'virtual:pwa-register/react'
 import { Toggle } from '@base-ui/react/toggle'
 import { ToggleGroup } from '@base-ui/react/toggle-group'
 import { NumberField } from '@base-ui/react/number-field'
@@ -15,7 +16,41 @@ export default function Settings() {
   const [settings, setSettings] = useState<SettingsType>(getSettings)
   const [exportDone, setExportDone] = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
+  const [checking, setChecking] = useState(false)
   const defaultClassNames = getDefaultClassNames()
+
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r: ServiceWorkerRegistration | undefined) {
+      console.log('SW Registered:', r)
+    },
+    onRegisterError(error: Error) {
+      console.error('SW registration error', error)
+    },
+  })
+
+  async function handleCheckUpdate() {
+    setChecking(true)
+    try {
+      const registration = await navigator.serviceWorker?.getRegistration()
+      if (registration) {
+        await registration.update()
+        // Give a moment for the SW to detect changes
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        if (!needRefresh) {
+          sileo.success({ title: '已是最新版本' })
+        }
+      } else {
+        sileo.success({ title: '已是最新版本' })
+      }
+    } catch {
+      sileo.error({ title: '检查更新失败', description: '请检查网络连接' })
+    } finally {
+      setChecking(false)
+    }
+  }
 
   const selectedDate = settings.dueDate ? new Date(settings.dueDate + 'T00:00:00') : undefined
 
@@ -290,10 +325,42 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Update Section */}
+      <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+        更新
+      </p>
+      <div className="space-y-3 mb-8">
+        <div className="bg-white dark:bg-[#16213e] rounded-2xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+          {needRefresh ? (
+            <button
+              onClick={() => updateServiceWorker(true)}
+              className="w-full px-5 py-4 flex items-center justify-between text-left"
+            >
+              <div>
+                <span className="text-sm font-bold text-duo-green">发现新版本</span>
+                <p className="text-xs text-gray-400 mt-0.5">点击立即更新</p>
+              </div>
+              <span className="text-xs font-bold text-white bg-duo-green rounded-full px-3 py-1">更新</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleCheckUpdate}
+              disabled={checking}
+              className="w-full px-5 py-4 flex items-center justify-between text-left disabled:opacity-50"
+            >
+              <span className="text-sm font-bold text-gray-800 dark:text-white">
+                {checking ? '正在检查…' : '检查更新'}
+              </span>
+              <span className="text-xs text-gray-400">当前: {__COMMIT_HASH__}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* About Section */}
       <div className="text-center mt-4 mb-8 px-4">
         <p className="text-xs text-gray-400 dark:text-gray-500">
-          宝宝助手 v2.0
+          宝宝助手
         </p>
         <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">
           本应用仅为记录工具，不提供医学建议
