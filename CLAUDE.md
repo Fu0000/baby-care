@@ -245,4 +245,4 @@ Configured in `vite.config.ts`. Display mode is `standalone` (full-screen like n
 
 ## Roadmap Context
 
-See `ROADMAP.md` for planned features. Phase 1 (hub + contraction timer) and Phase 1.5 (UI polish + Base UI migration) are complete. Next up is Phase 2 (hospital bag checklist).
+See `docs/ROADMAP.md` for planned features. Phase 1 (hub + contraction timer) and Phase 1.5 (UI polish + Base UI migration) are complete. Next up is Phase 2 (hospital bag checklist).
