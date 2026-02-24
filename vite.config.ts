@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import { execSync } from "node:child_process";
 import react from "@vitejs/plugin-react";
@@ -9,6 +10,21 @@ const commitHash = execSync("git rev-parse --short HEAD").toString().trim();
 export default defineConfig({
   define: {
     __COMMIT_HASH__: JSON.stringify(commitHash),
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.ts",
+    css: true,
+    globals: true,
+    clearMocks: true,
+    restoreMocks: true,
+    include: ["src/**/*.test.{ts,tsx}"],
+    exclude: ["e2e/**", "node_modules/**", "dist/**"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/lib/**/*.ts", "src/components/**/*.tsx", "src/pages/**/*.tsx"],
+    },
   },
   plugins: [
     react(),

@@ -12,6 +12,7 @@ import { db, type KickSession, type ContractionSession, type Contraction, type F
 import { getSettings } from '../lib/settings.ts'
 import { formatDate, formatTime, formatDuration, isSameDay } from '../lib/time.ts'
 import { getFeedingLabel, getFeedingEmoji, getFeedingColor, getFeedingBgColor, formatFeedingDuration } from '../lib/feeding-helpers.ts'
+import { getChartPoints, getTimeline } from './history-helpers.ts'
 
 function formatMs(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -518,50 +519,4 @@ export default function History() {
       </AlertDialog.Root>
     </div>
   )
-}
-
-interface TimelineEvent {
-  time: number
-  type: 'kick' | 'window'
-  label: string
-}
-
-function getTimeline(session: KickSession): TimelineEvent[] {
-  const events: TimelineEvent[] = []
-  let lastWindowId = -1
-  let kickNum = 0
-
-  for (const tap of session.taps) {
-    if (tap.windowId !== lastWindowId) {
-      kickNum++
-      lastWindowId = tap.windowId
-      events.push({
-        time: tap.timestamp,
-        type: 'kick',
-        label: `第 ${kickNum} 次有效胎动`,
-      })
-    } else {
-      events.push({
-        time: tap.timestamp,
-        type: 'window',
-        label: `窗口内追加点击`,
-      })
-    }
-  }
-  return events
-}
-
-function getChartPoints(sessions: KickSession[], days: number): { time: number; value: number }[] {
-  const points: { time: number; value: number }[] = []
-  const now = Date.now()
-  const dayMs = 86400000
-
-  for (let i = days - 1; i >= 0; i--) {
-    const dayStart = now - i * dayMs
-    const kicks = sessions
-      .filter(s => isSameDay(s.startedAt, dayStart))
-      .reduce((sum, s) => sum + s.kickCount, 0)
-    points.push({ time: Math.floor(dayStart / 1000), value: kicks })
-  }
-  return points
 }
