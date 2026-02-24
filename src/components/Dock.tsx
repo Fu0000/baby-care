@@ -28,12 +28,13 @@ export default function Dock() {
   return (
     <>
       {/* Gradient mask — fades content behind the floating dock */}
-      <div className="fixed bottom-0 inset-x-0 h-16 bg-gradient-to-t from-gray-50 dark:from-[#1a1a2e] to-transparent pointer-events-none z-50" />
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 h-16 bg-gradient-to-t from-gray-50 to-transparent dark:from-[#1a1a2e]" />
+
       {/* Floating dock tab bar + action button */}
-      <div className="fixed bottom-4 pwa:bottom-4 inset-x-0 z-50 flex items-center justify-between px-4 gap-2">
+      <div className="pwa:bottom-5.5 pwa:px-5.5 fixed inset-x-0 bottom-4 z-50 flex items-center justify-between gap-2 px-4">
         <nav
           ref={navRef as React.RefObject<HTMLElement>}
-          className="floating-dock flex flex-1 items-center gap-2 px-1 py-1 rounded-[30px] bg-white/80 dark:bg-[#16213e]/85 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/50"
+          className="floating-dock flex flex-1 items-center gap-2 rounded-[30px] border border-gray-200/70 bg-white/80 px-1 py-1 backdrop-blur-xl dark:border-gray-700/50 dark:bg-[#16213e]/85"
         >
           {navItems.map(({ to, label, Icon }, index) => {
             const itemProps = getItemProps(index);
@@ -47,24 +48,24 @@ export default function Dock() {
                 onClick={itemProps.onClick}
                 style={itemProps.style}
                 className={({ isActive }) =>
-                  `flex flex-col items-center justify-center gap-1.5 w-auto flex-1 h-13 rounded-full transition-all duration-200 ${
+                  `flex h-13.5 w-auto flex-1 flex-col items-center justify-center gap-1 rounded-full transition-all duration-200 ${
                     isActive
                       ? "bg-gray-100 text-gray-800 dark:bg-white/10 dark:text-white"
-                      : "text-gray-400 dark:text-gray-500 active:scale-90"
+                      : "text-gray-400 active:scale-90 dark:text-gray-500"
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     <Icon
-                      size={26}
+                      size={28}
                       color="currentColor"
                       style={{
                         ...iconGradientStyle,
                         opacity: isActive ? 1 : 0.95,
                       }}
                     />
-                    <span className="text-[10px] font-bold leading-none">
+                    <span className="text-[10px] leading-none font-bold">
                       {label}
                     </span>
                   </>
@@ -75,15 +76,15 @@ export default function Dock() {
         </nav>
         {/* Quick tools action button */}
         <Dialog.Root open={open} onOpenChange={setOpen}>
-          <Dialog.Trigger className="flex items-center justify-center size-15 rounded-full bg-white/80 dark:bg-[#16213e]/85 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 active:scale-90 transition-all duration-200">
-            <IconFeather size={26} style={iconGradientStyle} />
+          <Dialog.Trigger className="flex size-16 items-center justify-center rounded-full border border-gray-200/70 bg-white/80 text-gray-400 backdrop-blur-xl transition-all duration-200 active:scale-90 dark:border-gray-700/50 dark:bg-[#16213e]/85 dark:text-gray-500">
+            <IconFeather size={28} style={iconGradientStyle} />
           </Dialog.Trigger>
           <Dialog.Portal>
-            <Dialog.Backdrop className="fixed inset-0 bg-black/40 z-[100] transition-opacity duration-300 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0" />
-            <Dialog.Popup className="fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-[#16213e] rounded-t-3xl px-5 pt-5 pb-8 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full">
+            <Dialog.Backdrop className="fixed inset-0 z-[100] bg-black/40 transition-opacity duration-300 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+            <Dialog.Popup className="fixed right-0 bottom-0 left-0 z-[100] rounded-t-3xl bg-white px-5 pt-5 pb-8 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full dark:bg-[#16213e]">
               {/* Drag handle */}
-              <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-5" />
-              <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+              <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-gray-300 dark:bg-gray-600" />
+              <p className="mb-3 text-[11px] font-bold tracking-wider text-gray-400 uppercase dark:text-gray-500">
                 工具
               </p>
               <div className="grid grid-cols-2 gap-2.5">
@@ -96,14 +97,14 @@ export default function Dock() {
                         navigate(tool.path);
                       }
                     }}
-                    className={`rounded-2xl py-5 px-4 min-h-[7.5rem] flex flex-col items-center justify-center text-center transition-all duration-150 ${
+                    className={`flex min-h-[7.5rem] flex-col items-center justify-center rounded-2xl px-4 py-5 text-center transition-all duration-150 ${
                       tool.available
-                        ? "bg-white dark:bg-[#16213e] border border-gray-200 dark:border-gray-700/60 active:scale-[0.96]"
-                        : "bg-gray-50 dark:bg-gray-800/30 border border-dashed border-gray-200 dark:border-gray-700 opacity-40"
+                        ? "border border-gray-200 bg-white active:scale-[0.96] dark:border-gray-700/60 dark:bg-[#16213e]"
+                        : "border border-dashed border-gray-200 bg-gray-50 opacity-40 dark:border-gray-700 dark:bg-gray-800/30"
                     }`}
                   >
                     {!tool.available && (
-                      <span className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full mb-1">
+                      <span className="mb-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-semibold text-gray-400 dark:bg-gray-700 dark:text-gray-500">
                         即将推出
                       </span>
                     )}
