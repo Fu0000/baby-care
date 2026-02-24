@@ -6,172 +6,178 @@
 @custom-variant pwa (@media (display-mode: standalone));
 
 @theme {
-    --color-duo-green: #58cc02;
-    --color-duo-green-dark: #46a302;
-    --color-duo-green-light: #7ed321;
-    --color-duo-orange: #ff9600;
-    --color-duo-blue: #1cb0f6;
-    --color-duo-purple: #ce82ff;
-    --color-duo-red: #ff4b4b;
-    --color-duo-yellow: #ffc800;
-    --color-duo-gray: #e5e5e5;
-    --color-duo-gray-dark: #afafaf;
+  --color-duo-green: #58cc02;
+  --color-duo-green-dark: #46a302;
+  --color-duo-green-light: #7ed321;
+  --color-duo-orange: #ff9600;
+  --color-duo-blue: #1cb0f6;
+  --color-duo-purple: #ce82ff;
+  --color-duo-red: #ff4b4b;
+  --color-duo-yellow: #ffc800;
+  --color-duo-gray: #e5e5e5;
+  --color-duo-gray-dark: #afafaf;
 }
 
 :root {
-    --safe-area-top: env(safe-area-inset-top, 0px);
-    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-    --sileo-fill: #f3f3f3;
-    --dock-accent-1: #1a1a1a;
-    --dock-accent-2: #404040;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --sileo-fill: #f3f3f3;
+  --dock-accent-1: #1a1a1a;
+  --dock-accent-2: #404040;
 }
 
 .dark {
-    --sileo-fill: #161616;
-    --dock-accent-1: #d4d4d4;
-    --dock-accent-2: #eeeeee;
+  --sileo-fill: #161616;
+  --dock-accent-1: #d4d4d4;
+  --dock-accent-2: #eeeeee;
 }
 
 html,
 body,
 #root {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overscroll-behavior: none;
-    -webkit-tap-highlight-color: transparent;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
-    isolation: isolate;
+  isolation: isolate;
 }
 
 body {
-    position: relative;
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  position: relative;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .dark body {
-    background-color: #1a1a2e;
-    color: #e5e5e5;
+  background-color: #1a1a2e;
+  color: #e5e5e5;
 }
 
 @keyframes bounce-in {
-    0% {
-        transform: scale(0.3);
-        opacity: 0;
-    }
-    50% {
-        transform: scale(1.05);
-    }
-    70% {
-        transform: scale(0.9);
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes pulse-ring {
-    0% {
-        transform: scale(0.8);
-        opacity: 0.5;
-    }
-    80%,
-    100% {
-        transform: scale(1.4);
-        opacity: 0;
-    }
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  80%,
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
 }
 
 @keyframes float {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-8px);
-    }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 @keyframes slide-up {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes wiggle {
-    0%,
-    100% {
-        transform: rotate(0deg);
-    }
-    25% {
-        transform: rotate(-3deg);
-    }
-    75% {
-        transform: rotate(3deg);
-    }
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-3deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
 }
 
 .animate-bounce-in {
-    animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .animate-pulse-ring {
-    animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
 
 .animate-float {
-    animation: float 3s ease-in-out infinite;
+  animation: float 3s ease-in-out infinite;
 }
 
 .animate-slide-up {
-    animation: slide-up 0.4s ease-out;
+  animation: slide-up 0.4s ease-out;
 }
 
 .animate-wiggle {
-    animation: wiggle 0.5s ease-in-out;
+  animation: wiggle 0.5s ease-in-out;
 }
 
 /* Floating dock */
 .floating-dock {
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Subtle card textures — faint dot grids */
 .texture-dots {
-    background-image: radial-gradient(
-        circle,
-        currentColor 0.5px,
-        transparent 0.5px
-    );
-    background-size: 12px 12px;
+  background-image: radial-gradient(
+    circle,
+    currentColor 0.5px,
+    transparent 0.5px
+  );
+  background-size: 12px 12px;
 }
 
 .texture-grid {
-    background-image:
-        linear-gradient(currentColor 0.5px, transparent 0.5px),
-        linear-gradient(90deg, currentColor 0.5px, transparent 0.5px);
-    background-size: 16px 16px;
+  background-image:
+    linear-gradient(currentColor 0.5px, transparent 0.5px),
+    linear-gradient(90deg, currentColor 0.5px, transparent 0.5px);
+  background-size: 16px 16px;
 }
 
 .texture-diagonal {
-    background-image: repeating-linear-gradient(
-        -45deg,
-        currentColor,
-        currentColor 0.5px,
-        transparent 0.5px,
-        transparent 8px
-    );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    currentColor,
+    currentColor 0.5px,
+    transparent 0.5px,
+    transparent 8px
+  );
+}
+
+@media (display-mode: standalone) {
+  [data-sileo-viewport][data-position^="top"] {
+    padding-top: calc(0.75rem + var(--safe-area-top));
+  }
 }

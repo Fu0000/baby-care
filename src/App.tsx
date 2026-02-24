@@ -17,13 +17,7 @@ import BottleEntry from "./pages/tools/feeding-log/BottleEntry.tsx";
 export default function App() {
   return (
     <>
-      <Toaster
-        {...({
-          position: "top-center",
-          className: "pwa:pt-[var(--safe-area-top)]",
-          options: { fill: "var(--sileo-fill)" },
-        } as any)}
-      />
+      <Toaster position="top-center" options={{ fill: "var(--sileo-fill)" }} />
       {import.meta.env.DEV && <Agentation />}
       <Routes>
         <Route element={<Layout />}>
