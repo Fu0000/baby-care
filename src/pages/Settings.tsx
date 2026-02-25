@@ -10,11 +10,14 @@ import { zhCN } from "react-day-picker/locale";
 import { sileo } from "sileo";
 import { useNavigate } from "react-router-dom";
 import StickyHeader from "../components/StickyHeader.tsx";
+import BottomSheetDialog from "../components/BottomSheetDialog.tsx";
 import {
   getSettings,
   saveSettings,
   type Settings as SettingsType,
   type ColorMode,
+  type MotionLevel,
+  type UserStage,
 } from "../lib/settings.ts";
 import { db } from "../lib/db.ts";
 import { getAuthSession, logout } from "../lib/auth.ts";
@@ -255,16 +258,7 @@ export default function Settings() {
                   </Dialog.Trigger>
                   <Dialog.Portal>
                     <Dialog.Backdrop className="fixed inset-0 bg-black/40 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
-                    <Dialog.Popup
-                      className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] rounded-t-3xl px-2 pt-5 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full outline-none"
-                      style={{
-                        paddingBottom: "calc(var(--safe-area-bottom) + 2rem)",
-                      }}
-                    >
-                      <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4" />
-                      <Dialog.Title className="text-lg font-extrabold text-gray-800 dark:text-white text-center mb-2">
-                        选择预产期
-                      </Dialog.Title>
+                    <BottomSheetDialog title="选择预产期" className="px-2">
                       <div className="flex justify-center">
                         <DayPicker
                           animate
@@ -289,7 +283,7 @@ export default function Settings() {
                           }}
                         />
                       </div>
-                    </Dialog.Popup>
+                    </BottomSheetDialog>
                   </Dialog.Portal>
                 </Dialog.Root>
               </div>
@@ -382,6 +376,92 @@ export default function Settings() {
                   ["system", "系统"],
                   ["light", "浅色"],
                   ["dark", "深色"],
+                ] as const
+              ).map(([mode, label]) => (
+                <Toggle
+                  key={mode}
+                  value={mode}
+                  className="flex-1 py-2 rounded-[10px] text-sm font-bold text-center transition-colors cursor-pointer text-gray-500 dark:text-gray-400 data-[pressed]:bg-duo-green data-[pressed]:text-white"
+                >
+                  {label}
+                </Toggle>
+              ))}
+            </ToggleGroup>
+          </div>
+
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-gray-800 dark:text-white">舒适模式</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  夜间降低动画刺激，减少视觉打扰
+                </p>
+              </div>
+              <button
+                onClick={() => update({ comfortMode: !settings.comfortMode })}
+                className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                  settings.comfortMode
+                    ? "bg-duo-green text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                }`}
+              >
+                {settings.comfortMode ? "已开启" : "已关闭"}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
+            <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">
+              当前阶段
+            </p>
+            <p className="text-xs text-gray-400 mb-3">
+              用于优化工具排序、提醒与首页内容优先级
+            </p>
+            <ToggleGroup
+              value={[settings.userStage]}
+              onValueChange={(val) => {
+                if (val.length > 0) update({ userStage: val[0] as UserStage });
+              }}
+              className="grid grid-cols-3 gap-2"
+            >
+              {(
+                [
+                  ["pregnancy_late", "孕晚期"],
+                  ["newborn_0_3m", "新生儿0-3月"],
+                  ["newborn_3_12m", "新生儿3-12月"],
+                ] as const
+              ).map(([stage, label]) => (
+                <Toggle
+                  key={stage}
+                  value={stage}
+                  className="py-2 rounded-xl text-xs font-bold text-center transition-colors cursor-pointer bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 data-[pressed]:bg-duo-green data-[pressed]:text-white"
+                >
+                  {label}
+                </Toggle>
+              ))}
+            </ToggleGroup>
+          </div>
+
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
+            <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">
+              动效强度
+            </p>
+            <p className="text-xs text-gray-400 mb-3">
+              {settings.comfortMode
+                ? "舒适模式开启时会自动使用低动效"
+                : "中等动效更有反馈感，低动效更稳"}
+            </p>
+            <ToggleGroup
+              value={[settings.motionLevel]}
+              onValueChange={(val) => {
+                if (val.length > 0) update({ motionLevel: val[0] as MotionLevel });
+              }}
+              className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5"
+            >
+              {(
+                [
+                  ["low", "低动效"],
+                  ["medium", "中等动效"],
                 ] as const
               ).map(([mode, label]) => (
                 <Toggle

@@ -11,6 +11,30 @@ export default defineConfig({
   define: {
     __COMMIT_HASH__: JSON.stringify(commitHash),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+
+          if (id.includes("/react-day-picker/")) return "vendor-day-picker";
+          if (id.includes("/@base-ui/")) return "vendor-base-ui";
+          if (id.includes("/dexie/")) return "vendor-dexie";
+          if (id.includes("/nucleo-")) return "vendor-icons";
+          if (id.includes("/sileo/")) return "vendor-sileo";
+
+          if (
+            id.includes("/react-router/") ||
+            id.includes("/react-router-dom/") ||
+            id.includes("/react-dom/") ||
+            id.includes("/react/")
+          ) {
+            return "vendor-react";
+          }
+        },
+      },
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",

@@ -1,22 +1,30 @@
 import { getCurrentUserId } from './data-scope.ts'
 
 export type ColorMode = 'system' | 'light' | 'dark'
+export type MotionLevel = 'low' | 'medium'
+export type UserStage = 'pregnancy_late' | 'newborn_0_3m' | 'newborn_3_12m'
 
 export interface Settings {
   goalCount: number
   mergeWindowMinutes: number
   colorMode: ColorMode
+  motionLevel: MotionLevel
+  comfortMode: boolean
+  userStage: UserStage
   dueDate: string | null // ISO date string e.g. "2026-05-15"
 }
 
 interface UserSettings {
   goalCount: number
   mergeWindowMinutes: number
+  comfortMode: boolean
+  userStage: UserStage
   dueDate: string | null
 }
 
 interface DeviceSettings {
   colorMode: ColorMode
+  motionLevel: MotionLevel
 }
 
 const SETTINGS_KEY = 'babycare-settings'
@@ -28,11 +36,14 @@ const GUEST_SETTINGS_SCOPE = 'guest'
 const defaultUserSettings: UserSettings = {
   goalCount: 10,
   mergeWindowMinutes: 5,
+  comfortMode: false,
+  userStage: 'pregnancy_late',
   dueDate: null,
 }
 
 const defaultDeviceSettings: DeviceSettings = {
   colorMode: 'system',
+  motionLevel: 'medium',
 }
 
 export function getSettings(): Settings {
@@ -56,15 +67,22 @@ export function saveSettings(settings: Settings): void {
   const userSettings: UserSettings = {
     goalCount: settings.goalCount,
     mergeWindowMinutes: settings.mergeWindowMinutes,
+    comfortMode: settings.comfortMode,
+    userStage: settings.userStage,
     dueDate: settings.dueDate,
   }
   const deviceSettings: DeviceSettings = {
     colorMode: settings.colorMode,
+    motionLevel: settings.motionLevel,
   }
 
   localStorage.setItem(userKey, JSON.stringify(userSettings))
   localStorage.setItem(DEVICE_SETTINGS_KEY, JSON.stringify(deviceSettings))
   applyColorMode(settings.colorMode)
+  applyExperienceMode({
+    comfortMode: settings.comfortMode,
+    motionLevel: settings.motionLevel,
+  })
 }
 
 let _systemDarkQuery: MediaQueryList | null = null
@@ -84,6 +102,17 @@ export function applyColorMode(mode: ColorMode): void {
 
 function _onSystemChange(e: MediaQueryListEvent): void {
   document.documentElement.classList.toggle('dark', e.matches)
+}
+
+export function applyExperienceMode(input: {
+  comfortMode: boolean
+  motionLevel: MotionLevel
+}): void {
+  const root = document.documentElement
+  const motionLevel = input.comfortMode ? 'low' : input.motionLevel
+  root.classList.toggle('comfort-mode', input.comfortMode)
+  root.classList.toggle('motion-low', motionLevel === 'low')
+  root.classList.toggle('motion-medium', motionLevel === 'medium')
 }
 
 export function getDaysUntilDue(): number | null {
@@ -128,6 +157,7 @@ function migrateLegacyIfNeeded(userKey: string): void {
       DEVICE_SETTINGS_KEY,
       JSON.stringify({
         colorMode: resolveColorMode(legacyParsed),
+        motionLevel: defaultDeviceSettings.motionLevel,
       } satisfies DeviceSettings),
     )
   }
@@ -141,6 +171,8 @@ function migrateLegacyIfNeeded(userKey: string): void {
           legacyParsed.mergeWindowMinutes,
           defaultUserSettings.mergeWindowMinutes,
         ),
+        comfortMode: defaultUserSettings.comfortMode,
+        userStage: defaultUserSettings.userStage,
         dueDate: typeof legacyParsed.dueDate === 'string' ? legacyParsed.dueDate : null,
       } satisfies UserSettings),
     )
@@ -157,6 +189,10 @@ function readUserSettings(userKey: string): UserSettings {
       parsed.mergeWindowMinutes,
       defaultUserSettings.mergeWindowMinutes,
     ),
+    comfortMode: typeof parsed.comfortMode === 'boolean'
+      ? parsed.comfortMode
+      : defaultUserSettings.comfortMode,
+    userStage: resolveUserStage(parsed.userStage),
     dueDate: typeof parsed.dueDate === 'string' ? parsed.dueDate : null,
   }
 }
@@ -166,10 +202,11 @@ function readDeviceSettings(): DeviceSettings {
   if (!parsed) return defaultDeviceSettings
 
   const colorMode = resolveColorMode(parsed)
-  const normalized: DeviceSettings = { colorMode }
+  const motionLevel = resolveMotionLevel(parsed.motionLevel)
+  const normalized: DeviceSettings = { colorMode, motionLevel }
 
   const hasDarkMode = Object.prototype.hasOwnProperty.call(parsed, 'darkMode')
-  if (hasDarkMode || parsed.colorMode !== colorMode) {
+  if (hasDarkMode || parsed.colorMode !== colorMode || parsed.motionLevel !== motionLevel) {
     localStorage.setItem(DEVICE_SETTINGS_KEY, JSON.stringify(normalized))
   }
 
@@ -190,6 +227,18 @@ function resolveColorMode(raw: Record<string, unknown>): ColorMode {
   }
 
   return defaultDeviceSettings.colorMode
+}
+
+function resolveMotionLevel(raw: unknown): MotionLevel {
+  if (raw === 'low' || raw === 'medium') return raw
+  return defaultDeviceSettings.motionLevel
+}
+
+function resolveUserStage(raw: unknown): UserStage {
+  if (raw === 'pregnancy_late' || raw === 'newborn_0_3m' || raw === 'newborn_3_12m') {
+    return raw
+  }
+  return defaultUserSettings.userStage
 }
 
 function getSafeNumber(value: unknown, fallback: number): number {

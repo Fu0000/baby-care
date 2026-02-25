@@ -1,8 +1,22 @@
+import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import Dock from "./Dock.tsx";
+import { useCurrentUserId } from "../lib/data-scope.ts";
+import { applyColorMode, applyExperienceMode, getSettings } from "../lib/settings.ts";
 
 export default function Layout() {
+  const userId = useCurrentUserId();
+
+  useEffect(() => {
+    const settings = getSettings();
+    applyColorMode(settings.colorMode);
+    applyExperienceMode({
+      comfortMode: settings.comfortMode,
+      motionLevel: settings.motionLevel,
+    });
+  }, [userId]);
+
   return (
     <div className="bg-gray-50 dark:bg-[#1a1a2e] h-screen relative [--footer-height:5rem] pwa:[--footer-height:6rem]">
       <ScrollArea.Root className="h-full">

@@ -56,6 +56,14 @@ export default function Login() {
     <div className="min-h-screen bg-gray-50 px-4 py-6 dark:bg-[#1a1a2e]">
       <div className="mx-auto w-full max-w-lg">
         <div className="rounded-3xl border border-gray-200 bg-white p-6 dark:border-gray-700/60 dark:bg-[#16213e]">
+          <div className="mb-4">
+            <Link
+              to="/"
+              className="text-xs font-bold text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              ← 返回首页
+            </Link>
+          </div>
           <p className="text-[11px] font-bold tracking-wider text-gray-400 uppercase dark:text-gray-500">账号登录</p>
           <h1 className="mt-2 text-2xl font-extrabold text-gray-800 dark:text-white">欢迎回来</h1>
           <p className="mt-1 text-sm font-bold text-gray-500 dark:text-gray-400">登录后可绑定邀请码并同步历史数据</p>

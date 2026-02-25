@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
-import { IconGlassFillDuo18 } from 'nucleo-ui-fill-duo-18'
-import { db, type KickSession, type FeedingRecord } from '../lib/db.ts'
-import { getDaysUntilDue, getSettings, getWeeksPregnant } from '../lib/settings.ts'
-import { isSameDay } from '../lib/time.ts'
-import { formatTimeSinceLastFeed } from '../lib/feeding-helpers.ts'
-import { getOrderedTools } from '../lib/tools.tsx'
+import { sileo } from 'sileo'
+import OngoingSessionBanner from '../components/home/OngoingSessionBanner.tsx'
+import QuickRecordGrid from '../components/home/QuickRecordGrid.tsx'
+import SecondaryInsightsPanel from '../components/home/SecondaryInsightsPanel.tsx'
+import StageProgressBar from '../components/home/StageProgressBar.tsx'
+import TodayStatsCard from '../components/home/TodayStatsCard.tsx'
+import {
+  createEmptyHomeDashboardSnapshot,
+  getHomeDashboardSnapshot,
+  getHomeLayoutPrefs,
+  saveHomeLayoutPrefs,
+} from '../lib/home-dashboard.ts'
+import { getDaysUntilDue, getSettings, getWeeksPregnant, type UserStage } from '../lib/settings.ts'
 import { hasInviteAccess } from '../lib/auth.ts'
 import { useCurrentUserId } from '../lib/data-scope.ts'
-import { getJourneyCard, getKickSafetyNotice } from '../lib/journey.ts'
-import { sileo } from 'sileo'
+import { getDailyRhythmCard, getJourneyCard, getKickSafetyNotice } from '../lib/journey.ts'
+import { getGroupedEntryTools, getEntryTools, type ToolCard } from '../lib/tools.tsx'
+import { trackToolOpen } from '../lib/tool-usage.ts'
+import { getReminderConfig } from '../lib/reminders.ts'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -28,74 +36,107 @@ function formatDueDate(days: number): string {
   return `+${Math.abs(days)}天`
 }
 
-export default function Home() {
-  const navigate = useNavigate()
-  const [todayKicks, setTodayKicks] = useState(0)
-  const [streak, setStreak] = useState(0)
-  const [lastFeedAt, setLastFeedAt] = useState<number | null>(null)
-  const [activeKickSession, setActiveKickSession] = useState<KickSession | null>(null)
-  const userId = useCurrentUserId()
-  const daysUntilDue = getDaysUntilDue()
-  const weeksPregnant = getWeeksPregnant()
-  const settings = getSettings()
-  const [currentHour] = useState<number>(() => new Date().getHours())
-  const greeting = getGreeting()
-  const tools = getOrderedTools()
-  const hasAccess = hasInviteAccess()
-  const journey = getJourneyCard(weeksPregnant, daysUntilDue)
-  const safetyNotice = getKickSafetyNotice({
-    weeksPregnant,
-    todayKicks,
-    goalCount: settings.goalCount,
-    currentHour,
-    activeKickSession: activeKickSession !== null,
-  })
+function getStageTitle(stage: UserStage): string {
+  if (stage === 'newborn_0_3m') return '新生儿 0-3 月'
+  if (stage === 'newborn_3_12m') return '新生儿 3-12 月'
+  return '孕晚期'
+}
 
-  async function loadData() {
-    if (!userId) {
-      setTodayKicks(0)
-      setStreak(0)
-      setLastFeedAt(null)
-      setActiveKickSession(null)
-      return
-    }
-
-    const sessions: KickSession[] = await db.sessions.where('userId').equals(userId).toArray()
-    sessions.sort((a, b) => b.startedAt - a.startedAt)
-    const today = sessions.filter(s => isSameDay(s.startedAt, Date.now()))
-    setTodayKicks(today.reduce((sum, s) => sum + s.kickCount, 0))
-    setActiveKickSession(sessions.find(s => s.endedAt === null) ?? null)
-
-    let currentStreak = 0
-    const now = Date.now()
-    const dayMs = 86400000
-    for (let i = 0; i < 365; i++) {
-      const dayStart = now - i * dayMs
-      const hasSession = sessions.some(s => isSameDay(s.startedAt, dayStart))
-      if (hasSession) {
-        currentStreak++
-      } else if (i > 0) {
-        break
-      }
-    }
-    setStreak(currentStreak)
-
-    // Load last feeding
-    const feeds: FeedingRecord[] = await db.feedingRecords.where('userId').equals(userId).toArray()
-    feeds.sort((a, b) => b.startedAt - a.startedAt)
-    if (feeds.length > 0) {
-      setLastFeedAt(feeds[0].startedAt)
-    } else {
-      setLastFeedAt(null)
-    }
+function getReminderSummary(enabled: boolean, nightLowStimulus: boolean, priorityOnlyAtNight: boolean): string {
+  if (!enabled) {
+    return '提醒状态：当前提醒总开关已关闭。'
   }
 
-  useEffect(() => {
-    void loadData()
-  }, [userId])
+  if (nightLowStimulus && priorityOnlyAtNight) {
+    return '提醒状态：夜间已启用低打扰，仅保留高优先级提醒。'
+  }
 
-  function gotoProtected(path: string): void {
+  return '提醒状态：提醒已开启，可在提醒中心调整夜间策略。'
+}
+
+export default function Home() {
+  const navigate = useNavigate()
+  const userId = useCurrentUserId()
+  const settings = getSettings()
+  const daysUntilDue = getDaysUntilDue()
+  const weeksPregnant = getWeeksPregnant()
+  const [currentHour] = useState<number>(() => new Date().getHours())
+  const [showAllTools, setShowAllTools] = useState(false)
+  const [insightsCollapsed, setInsightsCollapsed] = useState<boolean>(
+    () => getHomeLayoutPrefs().secondaryInsightsCollapsed,
+  )
+
+  const reminderConfig = getReminderConfig(userId)
+  const reminderEnabled = reminderConfig.notificationsEnabled
+  const [dashboard, setDashboard] = useState(() =>
+    createEmptyHomeDashboardSnapshot({
+      goalCount: settings.goalCount,
+      userStage: settings.userStage,
+      remindersEnabled: reminderEnabled,
+    }),
+  )
+
+  const greeting = getGreeting()
+  const stageTitle = getStageTitle(settings.userStage)
+  const stageSubtitle =
+    daysUntilDue === null
+      ? '补充预产期后可获得更精确建议'
+      : weeksPregnant === null
+        ? `预产期倒计时 ${formatDueDate(daysUntilDue)}`
+        : `孕 ${weeksPregnant} 周 · 预产期倒计时 ${formatDueDate(daysUntilDue)}`
+  const stageTone =
+    settings.userStage === 'pregnancy_late'
+      ? 'purple'
+      : settings.userStage === 'newborn_0_3m'
+        ? 'green'
+        : 'blue'
+
+  const adaptiveContext = {
+    userStage: settings.userStage,
+    hour: currentHour,
+    weeksPregnant,
+    daysUntilDue,
+  }
+  const quickTools = getEntryTools(adaptiveContext, { limit: 4, includeRecent: true })
+  const groupedTools = getGroupedEntryTools(adaptiveContext, { includeRecent: false }).groups
+
+  const journey = getJourneyCard(weeksPregnant, daysUntilDue, settings.userStage)
+  const rhythm = getDailyRhythmCard(settings.userStage, currentHour)
+  const safetyNotice = getKickSafetyNotice({
+    userStage: settings.userStage,
+    weeksPregnant,
+    todayKicks: dashboard.todayKicks,
+    goalCount: settings.goalCount,
+    currentHour,
+    activeKickSession: dashboard.activeKickSession !== null,
+  })
+
+  const hasAccess = hasInviteAccess()
+
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      const snapshot = await getHomeDashboardSnapshot(userId, {
+        now: Date.now(),
+        goalCount: settings.goalCount,
+        userStage: settings.userStage,
+        remindersEnabled: reminderEnabled,
+      })
+
+      if (!cancelled) {
+        setDashboard(snapshot)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [reminderEnabled, settings.goalCount, settings.userStage, userId])
+
+  function gotoProtected(path: string, toolId?: string): void {
     if (hasInviteAccess()) {
+      if (toolId) trackToolOpen(toolId)
       navigate(path)
       return
     }
@@ -107,10 +148,25 @@ export default function Home() {
     navigate(`/auth/login?next=${encodeURIComponent(path)}`)
   }
 
+  function openTool(tool: ToolCard): void {
+    if (!tool.available) return
+    gotoProtected(tool.path, tool.id)
+  }
+
+  function toggleInsights() {
+    setInsightsCollapsed((previous) => {
+      const next = !previous
+      saveHomeLayoutPrefs({ secondaryInsightsCollapsed: next })
+      return next
+    })
+  }
+
   return (
     <div className="pb-4">
-      {/* Hero Banner — full bleed */}
-      <div className="bg-gradient-to-b from-duo-green/15 to-transparent dark:from-duo-green/10 dark:to-transparent pb-10" style={{ paddingTop: 'calc(var(--safe-area-top) + 2rem)' }}>
+      <div
+        className="bg-gradient-to-b from-duo-green/15 to-transparent dark:from-duo-green/10 dark:to-transparent pb-10"
+        style={{ paddingTop: 'calc(var(--safe-area-top) + 2rem)' }}
+      >
         <div className="flex flex-col items-center max-w-lg mx-auto px-4">
           <div className="w-20 h-20 mb-3 rounded-full overflow-hidden ring-4 ring-duo-green/20 dark:ring-duo-green/15 animate-float">
             <img
@@ -119,169 +175,108 @@ export default function Home() {
               className="w-full h-full object-cover scale-135"
             />
           </div>
-          <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white">
-            宝宝助手
-          </h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {greeting}
-          </p>
+          <h1 className="text-2xl font-extrabold text-gray-800 dark:text-white">宝宝助手</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{greeting}</p>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 -mt-4">
-        {/* Overview Stats — single panel with 3 columns */}
-        <div className="mb-6">
-          <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-            概览
-          </p>
-          {/* Due date — featured pill */}
-          {daysUntilDue !== null && (
-            <div className={`flex items-center justify-between rounded-2xl px-5 py-3.5 mb-3 ${
-              daysUntilDue <= 0
-                ? 'bg-duo-orange/10 dark:bg-duo-orange/15'
-                : 'bg-duo-purple/10 dark:bg-duo-purple/15'
-            }`}>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">📅</span>
-                <div>
-                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400">预产期倒计时</p>
-                  {weeksPregnant !== null && (
-                    <p className="text-[10px] font-bold mt-0.5 text-gray-400 dark:text-gray-500">
-                      孕 {weeksPregnant} 周
-                    </p>
-                  )}
-                </div>
-              </div>
-              <span className={`text-2xl font-extrabold ${daysUntilDue <= 0 ? 'text-duo-orange' : 'text-duo-purple'}`}>
-                {formatDueDate(daysUntilDue)}
-              </span>
-            </div>
-          )}
+      <div className="max-w-lg mx-auto px-4 -mt-4 space-y-6">
+        <StageProgressBar
+          title={stageTitle}
+          subtitle={stageSubtitle}
+          progress={dashboard.completionRate}
+          tone={stageTone}
+        />
 
-          {/* Small stat pills */}
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 bg-duo-orange/10 dark:bg-duo-orange/15 rounded-full px-3.5 py-2">
-              <span className="text-sm">🔥</span>
-              <span className="text-sm font-extrabold text-duo-orange">{streak}</span>
-              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">连续</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-duo-green/10 dark:bg-duo-green/15 rounded-full px-3.5 py-2">
-              <IconChildHeadOutlineDuo18 size={15} className="text-duo-green" />
-              <span className="text-sm font-extrabold text-duo-green">{todayKicks}</span>
-              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">今日胎动</span>
-            </div>
-            {lastFeedAt && (
-              <div className="flex items-center gap-1.5 bg-duo-purple/10 dark:bg-duo-purple/15 rounded-full px-3.5 py-2">
-                <IconGlassFillDuo18 size={15} className="text-duo-purple" />
-                <span className="text-sm font-extrabold text-duo-purple">{formatTimeSinceLastFeed(lastFeedAt)}</span>
-                <span className="text-xs font-bold text-gray-500 dark:text-gray-400">距上次喂奶</span>
-              </div>
-            )}
-          </div>
+        <TodayStatsCard
+          todayKicks={dashboard.todayKicks}
+          todayFeeds={dashboard.todayFeeds}
+          completionRate={dashboard.completionRate}
+          lastFeedAt={dashboard.lastFeedAt}
+          onOpenKicks={() => gotoProtected('/tools/kick-counter', 'kick-counter')}
+          onOpenFeeds={() => gotoProtected('/tools/feeding-log', 'feeding-log')}
+          onOpenCompletion={() => gotoProtected('/history')}
+        />
+
+        {dashboard.activeKickSession && (
+          <OngoingSessionBanner
+            session={dashboard.activeKickSession}
+            onContinue={() =>
+              gotoProtected(
+                '/tools/kick-counter/session/' + dashboard.activeKickSession.id,
+                'kick-counter',
+              )
+            }
+          />
+        )}
+
+        <div>
+          <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+            快速记录
+          </p>
+          <QuickRecordGrid tools={quickTools} onOpenTool={openTool} />
         </div>
 
-        {/* Weekly Journey */}
-        <div className="mb-6">
-          <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-            本周重点
-          </p>
-          <div
-            className={`rounded-2xl border px-5 py-4 ${
-              journey.tone === 'orange'
-                ? 'border-duo-orange/40 bg-duo-orange/10 dark:bg-duo-orange/15'
-                : journey.tone === 'purple'
-                  ? 'border-duo-purple/40 bg-duo-purple/10 dark:bg-duo-purple/15'
-                  : 'border-duo-green/40 bg-duo-green/10 dark:bg-duo-green/15'
-            }`}
-          >
-            <p className="text-sm font-extrabold text-gray-800 dark:text-white">{journey.title}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{journey.subtitle}</p>
-            <div className="mt-3 space-y-2">
-              {journey.tasks.map((task) => (
-                <div key={task} className="flex items-start gap-2">
-                  <span className="text-[11px] font-extrabold text-gray-500 dark:text-gray-400 mt-0.5">•</span>
-                  <p className="text-xs font-bold text-gray-700 dark:text-gray-200 leading-5">{task}</p>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-[#16213e] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              全部工具
+            </p>
+            <button
+              onClick={() => setShowAllTools((previous) => !previous)}
+              className="text-xs font-bold text-duo-blue"
+            >
+              {showAllTools ? '收起 ↑' : '查看全部 ↓'}
+            </button>
+          </div>
+
+          {!showAllTools ? (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              常用入口已在上方展示。可点击“查看全部”按场景选择工具。
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {groupedTools.map((group) => (
+                <div key={group.id}>
+                  <p className="text-xs font-extrabold text-gray-700 dark:text-gray-200">
+                    {group.title}
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                    {group.description}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {group.tools.map((tool) => (
+                      <button
+                        key={tool.id}
+                        onClick={() => openTool(tool)}
+                        className="rounded-xl border border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left active:scale-[0.98] transition-transform"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="shrink-0">{tool.icon}</div>
+                          <p className="text-sm font-bold text-gray-800 dark:text-white">{tool.title}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Kick Safety Notice */}
-        {safetyNotice && (
-          <div
-            className={`mb-6 rounded-2xl border px-4 py-3 ${
-              safetyNotice.level === 'warn'
-                ? 'border-duo-red/35 bg-duo-red/10'
-                : 'border-duo-blue/35 bg-duo-blue/10'
-            }`}
-          >
-            <p
-              className={`text-xs font-bold ${
-                safetyNotice.level === 'warn' ? 'text-duo-red' : 'text-duo-blue'
-              }`}
-            >
-              {safetyNotice.message}
-            </p>
-          </div>
-        )}
+        <SecondaryInsightsPanel
+          collapsed={insightsCollapsed}
+          onToggle={toggleInsights}
+          journey={journey}
+          rhythm={rhythm}
+          reminderSummary={getReminderSummary(
+            reminderConfig.notificationsEnabled,
+            reminderConfig.nightLowStimulus,
+            reminderConfig.priorityOnlyAtNight,
+          )}
+          safetyNotice={safetyNotice}
+        />
 
-        {/* Active Kick Session Banner */}
-        {activeKickSession && (
-          <button
-            onClick={() => gotoProtected('/tools/kick-counter/session/' + activeKickSession.id)}
-            className="w-full flex items-center gap-3 bg-duo-green/10 dark:bg-duo-green/15 rounded-2xl px-5 py-4 mb-6 active:scale-[0.98] transition-transform"
-          >
-            <span className="relative flex h-3 w-3 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-duo-green opacity-75" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-duo-green" />
-            </span>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-bold text-gray-800 dark:text-white">
-                胎动记录中 · 点击继续
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                已记录 {activeKickSession.kickCount} 次胎动
-              </p>
-            </div>
-            <span className="text-xl font-extrabold text-duo-green">
-              {activeKickSession.kickCount}
-            </span>
-            <span className="text-gray-400 text-sm">→</span>
-          </button>
-        )}
-
-        {/* Tool Cards Grid */}
-        <div className="mb-6">
-          <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-            工具
-          </p>
-          <div className="grid grid-cols-2 gap-2.5">
-            {tools.map(tool => (
-              <button
-                key={tool.id}
-                onClick={() => tool.available && gotoProtected(tool.path)}
-                className={`rounded-2xl py-5 px-4 min-h-[7.5rem] flex flex-col items-center justify-center text-center transition-all duration-150 ${
-                  tool.available
-                    ? 'bg-white dark:bg-[#16213e] border border-gray-200 dark:border-gray-700/60 active:scale-[0.96]'
-                    : 'bg-gray-50 dark:bg-gray-800/30 border border-dashed border-gray-200 dark:border-gray-700 opacity-40'
-                }`}
-              >
-                {!tool.available && (
-                  <span className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full mb-1">
-                    即将推出
-                  </span>
-                )}
-                <div className="mb-2">{tool.icon}</div>
-                <p className="text-sm font-bold text-gray-800 dark:text-white">
-                  {tool.title}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Disclaimer */}
         {!hasAccess && (
           <div className="rounded-2xl border border-duo-orange/30 bg-duo-orange/10 px-4 py-3">
             <p className="text-xs font-bold text-duo-orange">
@@ -289,7 +284,8 @@ export default function Home() {
             </p>
           </div>
         )}
-        <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-6 mb-4 px-6">
+
+        <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-2 mb-4 px-6">
           本应用仅为记录工具，不提供医学建议。如有异常请咨询医生。
         </p>
       </div>

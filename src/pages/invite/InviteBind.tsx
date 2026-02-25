@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { sileo } from 'sileo'
 import { ApiError } from '../../lib/api/client.ts'
 import {
@@ -58,6 +58,14 @@ export default function InviteBind() {
     <div className="min-h-screen bg-gray-50 px-4 py-6 dark:bg-[#1a1a2e]">
       <div className="mx-auto w-full max-w-lg">
         <div className="rounded-3xl border border-gray-200 bg-white p-6 dark:border-gray-700/60 dark:bg-[#16213e]">
+          <div className="mb-4">
+            <Link
+              to="/"
+              className="text-xs font-bold text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              ← 返回首页
+            </Link>
+          </div>
           <p className="text-[11px] font-bold tracking-wider text-gray-400 uppercase dark:text-gray-500">邀请码验证</p>
           <h1 className="mt-2 text-2xl font-extrabold text-gray-800 dark:text-white">输入邀请码解锁完整功能</h1>
           <p className="mt-2 text-sm font-bold text-gray-500 dark:text-gray-400">绑定后会自动迁移你当前设备上的本地记录到云端</p>

@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertDialog } from '@base-ui/react/alert-dialog'
-import { db, type KickSession } from '../../../lib/db.ts'
+import {
+  db,
+  type KickSession,
+  getActiveKickSessionByUser,
+  getKickSessionsByUserDesc,
+  getKickSessionsForDay,
+} from '../../../lib/db.ts'
 import { getSettings } from '../../../lib/settings.ts'
 import { formatDate } from '../../../lib/time.ts'
 import { isSameDay } from '../../../lib/time.ts'
@@ -15,41 +21,52 @@ export default function KickHome() {
   const [activeSession, setActiveSession] = useState<KickSession | null>(null)
   const [streak, setStreak] = useState(0)
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
+  const [todayTimestamp] = useState<number>(() => Date.now())
   const userId = useCurrentUserId()
   const settings = getSettings()
 
-  async function loadData() {
-    if (!userId) {
-      setTodaySessions([])
-      setActiveSession(null)
-      setStreak(0)
-      return
-    }
-
-    const sessions = await db.sessions.where('userId').equals(userId).toArray()
-    sessions.sort((a, b) => b.startedAt - a.startedAt)
-    const today = sessions.filter(s => isSameDay(s.startedAt, Date.now()))
-    setTodaySessions(today)
-    setActiveSession(sessions.find(s => s.endedAt === null) ?? null)
-
-    // Calculate streak
-    let currentStreak = 0
-    const now = Date.now()
-    const dayMs = 86400000
-    for (let i = 0; i < 365; i++) {
-      const dayStart = now - i * dayMs
-      const hasSession = sessions.some(s => isSameDay(s.startedAt, dayStart))
-      if (hasSession) {
-        currentStreak++
-      } else if (i > 0) {
-        break
-      }
-    }
-    setStreak(currentStreak)
-  }
-
   useEffect(() => {
-    void loadData()
+    let cancelled = false
+
+    void (async () => {
+      if (!userId) {
+        if (cancelled) return
+        setTodaySessions([])
+        setActiveSession(null)
+        setStreak(0)
+        return
+      }
+
+      const now = Date.now()
+      const dayMs = 86400000
+      const [sessions, today, active] = await Promise.all([
+        getKickSessionsByUserDesc(userId, {
+          sinceStartedAt: now - dayMs * 370,
+        }),
+        getKickSessionsForDay(userId, now),
+        getActiveKickSessionByUser(userId),
+      ])
+      if (cancelled) return
+      setTodaySessions(today)
+      setActiveSession(active)
+
+      // Calculate streak
+      let currentStreak = 0
+      for (let i = 0; i < 365; i++) {
+        const dayStart = now - i * dayMs
+        const hasSession = sessions.some(s => isSameDay(s.startedAt, dayStart))
+        if (hasSession) {
+          currentStreak++
+        } else if (i > 0) {
+          break
+        }
+      }
+      setStreak(currentStreak)
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [userId])
 
   async function startNewSession() {
@@ -114,7 +131,7 @@ export default function KickHome() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {formatDate(Date.now())} · 今日
+              {formatDate(todayTimestamp)} · 今日
             </p>
             <p className="text-3xl font-extrabold text-gray-800 dark:text-white mt-1">
               {todayKicks} <span className="text-base font-normal text-gray-400">次胎动</span>

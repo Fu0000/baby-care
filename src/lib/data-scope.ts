@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AUTH_SESSION_CHANGED_EVENT, getAuthSession } from './auth.ts'
+import { AUTH_SESSION_CHANGED_EVENT, getAuthSession } from './auth-session.ts'
 
 export function getCurrentUserId(): string | null {
   return getAuthSession()?.user.id ?? null

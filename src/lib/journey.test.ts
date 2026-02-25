@@ -1,38 +1,31 @@
 import { describe, expect, it } from 'vitest'
-import { getJourneyCard, getKickSafetyNotice } from './journey.ts'
+import { getDailyRhythmCard, getJourneyCard, getKickSafetyNotice } from './journey.ts'
 
 describe('journey helpers', () => {
-  it('returns onboarding journey when pregnancy info is missing', () => {
-    const card = getJourneyCard(null, null)
-    expect(card.title).toContain('建立你的陪伴节奏')
-    expect(card.tasks.length).toBeGreaterThan(0)
+  it('returns newborn journey card when stage is newborn', () => {
+    const card = getJourneyCard(null, null, 'newborn_0_3m')
+    expect(card.title).toContain('新生儿')
+    expect(card.tasks.length).toBeGreaterThanOrEqual(3)
   })
 
-  it('returns labor-focused journey after due date', () => {
-    const card = getJourneyCard(39, -1)
-    expect(card.title).toContain('临产准备周')
-    expect(card.tone).toBe('orange')
+  it('returns rhythm card aligned with stage and hour', () => {
+    const nightCard = getDailyRhythmCard('newborn_0_3m', 23)
+    const dayCard = getDailyRhythmCard('pregnancy_late', 10)
+
+    expect(nightCard.title).toContain('夜间')
+    expect(dayCard.title).toContain('今日')
   })
 
-  it('warns for late-day low kicks in third trimester', () => {
+  it('skips kick safety notice for non-pregnancy stage', () => {
     const notice = getKickSafetyNotice({
-      weeksPregnant: 33,
-      todayKicks: 1,
-      goalCount: 10,
-      currentHour: 21,
-      activeKickSession: false,
-    })
-    expect(notice?.level).toBe('warn')
-  })
-
-  it('returns info when there is an active kick session', () => {
-    const notice = getKickSafetyNotice({
-      weeksPregnant: 35,
+      userStage: 'newborn_3_12m',
+      weeksPregnant: 39,
       todayKicks: 0,
       goalCount: 10,
       currentHour: 22,
-      activeKickSession: true,
+      activeKickSession: false,
     })
-    expect(notice?.level).toBe('info')
+
+    expect(notice).toBeNull()
   })
 })

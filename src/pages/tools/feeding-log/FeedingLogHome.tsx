@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Dialog } from '@base-ui/react/dialog'
 import StickyHeader from '../../../components/StickyHeader.tsx'
-import { db, type FeedingRecord, type FeedingType } from '../../../lib/db.ts'
+import BottomSheetDialog from '../../../components/BottomSheetDialog.tsx'
+import {
+  db,
+  type FeedingRecord,
+  type FeedingType,
+  getFeedingRecordsByUserDesc,
+} from '../../../lib/db.ts'
 import { formatTime, isSameDay } from '../../../lib/time.ts'
 import {
   getFeedingLabel,
@@ -24,22 +30,26 @@ export default function FeedingLogHome() {
   const [showPumpPicker, setShowPumpPicker] = useState(false)
   const userId = useCurrentUserId()
 
-  async function loadRecords() {
-    if (!userId) {
-      setRecords([])
-      return
-    }
-    const all = await db.feedingRecords.where('userId').equals(userId).toArray()
-    all.sort((a, b) => b.startedAt - a.startedAt)
-    setRecords(all)
-  }
-
   useEffect(() => {
-    void loadRecords()
+    let cancelled = false
+
+    void (async () => {
+      if (!userId) {
+        if (!cancelled) setRecords([])
+        return
+      }
+      const all = await getFeedingRecordsByUserDesc(userId)
+      if (!cancelled) setRecords(all)
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [userId])
 
   const activeRecord = records.find(r => r.endedAt === null && r.type !== 'bottle')
-  const todayRecords = records.filter(r => isSameDay(r.startedAt, Date.now()))
+  const nowTimestamp = new Date().getTime()
+  const todayRecords = records.filter(r => isSameDay(r.startedAt, nowTimestamp))
   const summary = getTodaySummary(todayRecords)
   const lastFeed = records.length > 0 ? records[0] : null
 
@@ -50,11 +60,12 @@ export default function FeedingLogHome() {
     if (!userId) return
     setShowBreastPicker(false)
     const id = crypto.randomUUID()
+    const startedAt = new Date().getTime()
     const record: FeedingRecord = {
       id,
       userId,
       type: side,
-      startedAt: Date.now(),
+      startedAt,
       endedAt: null,
       duration: null,
       volumeMl: null,
@@ -69,11 +80,12 @@ export default function FeedingLogHome() {
     if (!userId) return
     setShowPumpPicker(false)
     const id = crypto.randomUUID()
+    const startedAt = new Date().getTime()
     const record: FeedingRecord = {
       id,
       userId,
       type: side,
-      startedAt: Date.now(),
+      startedAt,
       endedAt: null,
       duration: null,
       volumeMl: null,
@@ -161,11 +173,7 @@ export default function FeedingLogHome() {
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Backdrop className="fixed inset-0 bg-black/40 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
-            <Dialog.Popup className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] rounded-t-3xl px-4 pt-5 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full outline-none" style={{ paddingBottom: 'calc(var(--safe-area-bottom) + 2rem)' }}>
-              <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4" />
-              <Dialog.Title className="text-lg font-extrabold text-gray-800 dark:text-white text-center mb-2">
-                选择亲喂侧
-              </Dialog.Title>
+            <BottomSheetDialog title="选择亲喂侧">
               <p className="text-xs text-gray-400 text-center mb-5">
                 建议：{suggestedBreast === 'breast_left' ? '左侧' : '右侧'}（上次在另一侧）
               </p>
@@ -191,7 +199,7 @@ export default function FeedingLogHome() {
                   🤱 右侧
                 </button>
               </div>
-            </Dialog.Popup>
+            </BottomSheetDialog>
           </Dialog.Portal>
         </Dialog.Root>
 
@@ -212,11 +220,7 @@ export default function FeedingLogHome() {
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Backdrop className="fixed inset-0 bg-black/40 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
-            <Dialog.Popup className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#16213e] rounded-t-3xl px-4 pt-5 transition-all duration-300 data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full outline-none" style={{ paddingBottom: 'calc(var(--safe-area-bottom) + 2rem)' }}>
-              <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4" />
-              <Dialog.Title className="text-lg font-extrabold text-gray-800 dark:text-white text-center mb-2">
-                选择吸奶方式
-              </Dialog.Title>
+            <BottomSheetDialog title="选择吸奶方式">
               <div className="grid grid-cols-3 gap-2">
                 {(['pump_left', 'pump_right', 'pump_both'] as const).map(type => (
                   <button
@@ -232,7 +236,7 @@ export default function FeedingLogHome() {
                   </button>
                 ))}
               </div>
-            </Dialog.Popup>
+            </BottomSheetDialog>
           </Dialog.Portal>
         </Dialog.Root>
       </div>

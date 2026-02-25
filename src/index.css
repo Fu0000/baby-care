@@ -24,12 +24,34 @@
   --sileo-fill: #f3f3f3;
   --dock-accent-1: #1a1a1a;
   --dock-accent-2: #404040;
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-emphasis: 480ms;
+  --motion-scale-active: 0.96;
 }
 
 .dark {
   --sileo-fill: #161616;
   --dock-accent-1: #d4d4d4;
   --dock-accent-2: #eeeeee;
+}
+
+.motion-medium {
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-emphasis: 480ms;
+  --motion-scale-active: 0.96;
+}
+
+.motion-low,
+.comfort-mode {
+  --motion-fast: 80ms;
+  --motion-base: 120ms;
+  --motion-slow: 180ms;
+  --motion-emphasis: 220ms;
+  --motion-scale-active: 0.985;
 }
 
 html,
@@ -121,23 +143,25 @@ body {
 }
 
 .animate-bounce-in {
-  animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  animation: bounce-in var(--motion-emphasis)
+    cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .animate-pulse-ring {
-  animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  animation: pulse-ring calc(var(--motion-emphasis) * 2.2)
+    cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
 
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: float calc(var(--motion-emphasis) * 6) ease-in-out infinite;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.4s ease-out;
+  animation: slide-up var(--motion-slow) ease-out;
 }
 
 .animate-wiggle {
-  animation: wiggle 0.5s ease-in-out;
+  animation: wiggle var(--motion-emphasis) ease-in-out;
 }
 
 /* Floating dock */
@@ -174,6 +198,30 @@ body {
     transparent 0.5px,
     transparent 8px
   );
+}
+
+.motion-low .animate-pulse-ring,
+.comfort-mode .animate-pulse-ring,
+.motion-low .animate-float,
+.comfort-mode .animate-float,
+.motion-low .animate-wiggle,
+.comfort-mode .animate-wiggle {
+  animation: none !important;
+}
+
+.motion-low *,
+.comfort-mode * {
+  transition-duration: var(--motion-base);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 80ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media (display-mode: standalone) {

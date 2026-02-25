@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0 <23"
+  },
   "scripts": {
     "dev": "vite",
     "dev:web": "vite",
@@ -54,7 +57,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "fake-indexeddb": "^6.2.5",
     "globals": "^16.5.0",
-    "jsdom": "^28.1.0",
+    "jsdom": "^26.1.0",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.2.0",

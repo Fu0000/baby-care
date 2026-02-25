@@ -1,8 +1,17 @@
+import type { UserStage } from './settings.ts'
+
 export interface JourneyCard {
   title: string
   subtitle: string
   tasks: string[]
   tone: 'green' | 'orange' | 'purple'
+}
+
+export interface DailyRhythmCard {
+  title: string
+  subtitle: string
+  tasks: string[]
+  tone: 'blue' | 'green' | 'orange'
 }
 
 export interface KickSafetyNotice {
@@ -13,7 +22,34 @@ export interface KickSafetyNotice {
 export function getJourneyCard(
   weeksPregnant: number | null,
   daysUntilDue: number | null,
+  userStage: UserStage = 'pregnancy_late',
 ): JourneyCard {
+  if (userStage === 'newborn_0_3m') {
+    return {
+      title: '新生儿前 3 个月重点',
+      subtitle: '优先稳定喂养、睡眠与照护分工，减少无效焦虑。',
+      tasks: [
+        '每天固定 2 个时段复盘喂奶与排便记录',
+        '夜间优先低刺激安抚，避免连续强光和噪音',
+        '与家人明确轮班与补觉时段，先保证照护者体力',
+      ],
+      tone: 'green',
+    }
+  }
+
+  if (userStage === 'newborn_3_12m') {
+    return {
+      title: '3-12 月发育阶段重点',
+      subtitle: '从“被动照护”过渡到“互动引导”，节奏比强度更重要。',
+      tasks: [
+        '每天安排 2-3 次短时互动（追视、触摸、语言回应）',
+        '记录喂养与作息变化，观察是否出现稳定窗口',
+        '按月龄逐步提升互动难度，避免过度刺激',
+      ],
+      tone: 'purple',
+    }
+  }
+
   if (weeksPregnant === null || daysUntilDue === null) {
     return {
       title: '建立你的陪伴节奏',
@@ -92,13 +128,22 @@ export function getJourneyCard(
 }
 
 export function getKickSafetyNotice(input: {
+  userStage?: UserStage
   weeksPregnant: number | null
   todayKicks: number
   goalCount: number
   currentHour: number
   activeKickSession: boolean
 }): KickSafetyNotice | null {
-  const { weeksPregnant, todayKicks, goalCount, currentHour, activeKickSession } = input
+  const {
+    userStage = 'pregnancy_late',
+    weeksPregnant,
+    todayKicks,
+    goalCount,
+    currentHour,
+    activeKickSession,
+  } = input
+  if (userStage !== 'pregnancy_late') return null
   if (weeksPregnant === null || weeksPregnant < 28) return null
 
   if (activeKickSession) {
@@ -123,4 +168,70 @@ export function getKickSafetyNotice(input: {
   }
 
   return null
+}
+
+export function getDailyRhythmCard(stage: UserStage, hour: number): DailyRhythmCard {
+  const isNight = hour >= 21 || hour < 7
+  if (stage === 'pregnancy_late') {
+    if (isNight) {
+      return {
+        title: '今晚节奏建议',
+        subtitle: '夜间优先安静观察与放松，减少高刺激信息。',
+        tasks: [
+          '侧卧 10-20 分钟做一次胎动观察',
+          '将待产证件和手机放在固定可拿位置',
+          '若出现明显异常体感，及时联系医生',
+        ],
+        tone: 'orange',
+      }
+    }
+
+    return {
+      title: '今日照护节奏',
+      subtitle: '白天优先补水、轻活动和规律记录。',
+      tasks: [
+        '固定 1-2 次短时胎动记录，便于趋势对比',
+        '准备或复盘待产包清单，补齐短缺物品',
+        '安排一段 15 分钟放松呼吸或伸展',
+      ],
+      tone: 'green',
+    }
+  }
+
+  if (stage === 'newborn_0_3m') {
+    if (isNight) {
+      return {
+        title: '夜间低打扰策略',
+        subtitle: '少开灯、少说话、少切换动作，先稳住宝宝情绪。',
+        tasks: [
+          '先判断是否饥饿，再喂奶并记录',
+          '换尿布后维持低亮度环境，帮助重新入睡',
+          '和家人轮值，避免单人连续熬夜',
+        ],
+        tone: 'blue',
+      }
+    }
+
+    return {
+      title: '白天照护建议',
+      subtitle: '记录喂养间隔与体感，逐步建立“可预期节奏”。',
+      tasks: [
+        '每次喂奶后简短记录时长或奶量',
+        '安排 1-2 次短时趴卧/追视互动',
+        '照护者在宝宝安稳时优先补水和补觉',
+      ],
+      tone: 'green',
+    }
+  }
+
+  return {
+    title: '互动成长建议',
+    subtitle: '以互动为主线，短时高频比长时高强更有效。',
+    tasks: [
+      '每天 2 次语言回应互动（唱歌/对话）',
+      '结合亲子互动工具做 5-10 分钟游戏',
+      '记录情绪高峰时段，避开疲惫窗口安排活动',
+    ],
+    tone: isNight ? 'blue' : 'green',
+  }
 }

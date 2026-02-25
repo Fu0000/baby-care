@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import StickyHeader from '../../../components/StickyHeader.tsx'
-import { db, type ContractionSession } from '../../../lib/db.ts'
+import {
+  db,
+  type ContractionSession,
+  getContractionSessionsByUserDesc,
+} from '../../../lib/db.ts'
 import { formatDate, formatTime, isSameDay } from '../../../lib/time.ts'
 import { useCurrentUserId } from '../../../lib/data-scope.ts'
 
@@ -16,20 +20,24 @@ function formatMs(ms: number): string {
 export default function ContractionHome() {
   const navigate = useNavigate()
   const [sessions, setSessions] = useState<ContractionSession[]>([])
+  const [todayTimestamp] = useState<number>(() => Date.now())
   const userId = useCurrentUserId()
 
-  async function loadSessions() {
-    if (!userId) {
-      setSessions([])
-      return
-    }
-    const all = await db.contractionSessions.where('userId').equals(userId).toArray()
-    all.sort((a, b) => b.startedAt - a.startedAt)
-    setSessions(all)
-  }
-
   useEffect(() => {
-    void loadSessions()
+    let cancelled = false
+
+    void (async () => {
+      if (!userId) {
+        if (!cancelled) setSessions([])
+        return
+      }
+      const all = await getContractionSessionsByUserDesc(userId)
+      if (!cancelled) setSessions(all)
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [userId])
 
   // Find active (unended) session
@@ -120,7 +128,7 @@ export default function ContractionHome() {
           {grouped.map(group => (
             <div key={group.date}>
               <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2">
-                {isSameDay(group.ts, Date.now()) ? '今天' : group.date}
+                {isSameDay(group.ts, todayTimestamp) ? '今天' : group.date}
               </h3>
               <div className="space-y-2">
                 {group.sessions.map(session => (

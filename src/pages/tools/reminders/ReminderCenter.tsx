@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { NumberField } from '@base-ui/react/number-field'
+import { Toggle } from '@base-ui/react/toggle'
+import { ToggleGroup } from '@base-ui/react/toggle-group'
 import { useNavigate } from 'react-router-dom'
 import { sileo } from 'sileo'
 import StickyHeader from '../../../components/StickyHeader.tsx'
 import { useCurrentUserId } from '../../../lib/data-scope.ts'
 import {
   type ReminderConfig,
+  type ReminderPresetId,
+  getReminderPresetPatch,
   getNotificationPermissionStatus,
   getReminderConfig,
   requestNotificationPermission,
@@ -46,6 +50,20 @@ export default function ReminderCenter() {
     const next = { ...config, ...patch }
     setConfig(next)
     saveReminderConfig(next, userId)
+  }
+
+  function applyPreset(preset: ReminderPresetId): void {
+    const patch = getReminderPresetPatch(preset)
+    const next = { ...config, ...patch }
+    setConfig(next)
+    saveReminderConfig(next, userId)
+    const label =
+      preset === 'night-care'
+        ? '夜间优先'
+        : preset === 'active-track'
+          ? '积极记录'
+          : '平衡模式'
+    sileo.success({ title: `已应用${label}预设` })
   }
 
   async function handleRequestPermission(): Promise<void> {
@@ -169,6 +187,30 @@ export default function ReminderCenter() {
         </p>
         <div className="space-y-3 pb-4">
           <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
+            <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">场景预设</p>
+            <p className="text-xs text-gray-400 mb-3">
+              一键切换提醒风格，再按需微调细节
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  ['balanced', '平衡模式'],
+                  ['night-care', '夜间优先'],
+                  ['active-track', '积极记录'],
+                ] as const
+              ).map(([preset, label]) => (
+                <button
+                  key={preset}
+                  onClick={() => applyPreset(preset)}
+                  className="rounded-xl py-2 text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 active:scale-95 transition-transform"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-bold text-gray-800 dark:text-white">夜间静默时段</p>
@@ -207,6 +249,101 @@ export default function ReminderCenter() {
                 </label>
               </div>
             )}
+          </div>
+
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-gray-800 dark:text-white">夜间低打扰策略</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  夜间减少通知强度，避免频繁打扰休息
+                </p>
+              </div>
+              <button
+                onClick={() => updateConfig({ nightLowStimulus: !config.nightLowStimulus })}
+                className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                  config.nightLowStimulus
+                    ? 'bg-duo-green text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                }`}
+              >
+                {config.nightLowStimulus ? '已开启' : '已关闭'}
+              </button>
+            </div>
+            {config.nightLowStimulus && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-xs text-gray-400">夜间仅发送高优先级提醒</p>
+                <button
+                  onClick={() =>
+                    updateConfig({ priorityOnlyAtNight: !config.priorityOnlyAtNight })
+                  }
+                  className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                    config.priorityOnlyAtNight
+                      ? 'bg-duo-green text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  {config.priorityOnlyAtNight ? '是' : '否'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
+            <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">提醒频率上限</p>
+            <p className="text-xs text-gray-400 mb-3">
+              限制提醒密度，避免连续弹出造成焦虑感
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-gray-400 mb-2">每小时上限</p>
+                <NumberField.Root
+                  value={config.maxNotificationsPerHour}
+                  onValueChange={(value) => {
+                    if (value !== null) {
+                      updateConfig({ maxNotificationsPerHour: value })
+                    }
+                  }}
+                  min={1}
+                  max={8}
+                  step={1}
+                >
+                  <NumberField.Group className="flex items-center gap-2">
+                    <NumberField.Decrement className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center active:scale-90 transition-transform cursor-pointer">
+                      −
+                    </NumberField.Decrement>
+                    <NumberField.Input className="w-14 text-center text-lg font-extrabold text-duo-green bg-transparent border-0 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                    <NumberField.Increment className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center active:scale-90 transition-transform cursor-pointer">
+                      +
+                    </NumberField.Increment>
+                  </NumberField.Group>
+                </NumberField.Root>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-2">每日上限</p>
+                <NumberField.Root
+                  value={config.maxNotificationsPerDay}
+                  onValueChange={(value) => {
+                    if (value !== null) {
+                      updateConfig({ maxNotificationsPerDay: value })
+                    }
+                  }}
+                  min={1}
+                  max={24}
+                  step={1}
+                >
+                  <NumberField.Group className="flex items-center gap-2">
+                    <NumberField.Decrement className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center active:scale-90 transition-transform cursor-pointer">
+                      −
+                    </NumberField.Decrement>
+                    <NumberField.Input className="w-14 text-center text-lg font-extrabold text-duo-green bg-transparent border-0 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                    <NumberField.Increment className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center active:scale-90 transition-transform cursor-pointer">
+                      +
+                    </NumberField.Increment>
+                  </NumberField.Group>
+                </NumberField.Root>
+              </div>
+            </div>
           </div>
 
           <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
@@ -350,6 +487,40 @@ export default function ReminderCenter() {
                 {config.prenatalEnabled ? '已开启' : '已关闭'}
               </button>
             </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
+            <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">提醒文案风格</p>
+            <p className="text-xs text-gray-400 mb-3">
+              信息型更克制，行动型更明确，关怀型更温和
+            </p>
+            <ToggleGroup
+              value={[config.contentTone]}
+              onValueChange={(val) => {
+                if (val.length > 0) {
+                  updateConfig({
+                    contentTone: val[0] as ReminderConfig['contentTone'],
+                  })
+                }
+              }}
+              className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5"
+            >
+              {(
+                [
+                  ['info', '信息型'],
+                  ['action', '行动型'],
+                  ['care', '关怀型'],
+                ] as const
+              ).map(([tone, label]) => (
+                <Toggle
+                  key={tone}
+                  value={tone}
+                  className="flex-1 py-2 rounded-[10px] text-sm font-bold text-center transition-colors cursor-pointer text-gray-500 dark:text-gray-400 data-[pressed]:bg-duo-green data-[pressed]:text-white"
+                >
+                  {label}
+                </Toggle>
+              ))}
+            </ToggleGroup>
           </div>
 
           {!config.notificationsEnabled && (

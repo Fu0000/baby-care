@@ -76,6 +76,9 @@ describe('settings', () => {
       goalCount: 10,
       mergeWindowMinutes: 5,
       colorMode: 'system',
+      motionLevel: 'medium',
+      comfortMode: false,
+      userStage: 'pregnancy_late',
       dueDate: null,
     })
   })
@@ -127,10 +130,15 @@ describe('settings', () => {
       goalCount: 10,
       mergeWindowMinutes: 5,
       colorMode: 'dark',
+      motionLevel: 'medium',
+      comfortMode: true,
+      userStage: 'newborn_0_3m',
       dueDate: null,
     })
 
     expect(document.documentElement.classList.contains('dark')).toBe(true)
+    expect(document.documentElement.classList.contains('comfort-mode')).toBe(true)
+    expect(document.documentElement.classList.contains('motion-low')).toBe(true)
     expect(window.localStorage.getItem('babycare-device-settings')).toContain('"colorMode":"dark"')
     expect(window.localStorage.getItem('babycare-user-settings:user-1')).toContain('"goalCount":10')
   })
@@ -175,6 +183,9 @@ describe('settings', () => {
       goalCount: 12,
       mergeWindowMinutes: 3,
       colorMode: 'dark',
+      motionLevel: 'low',
+      comfortMode: false,
+      userStage: 'pregnancy_late',
       dueDate: '2026-09-01',
     })
 
@@ -183,6 +194,9 @@ describe('settings', () => {
       goalCount: 10,
       mergeWindowMinutes: 5,
       colorMode: 'dark',
+      motionLevel: 'low',
+      comfortMode: false,
+      userStage: 'pregnancy_late',
       dueDate: null,
     })
   })
