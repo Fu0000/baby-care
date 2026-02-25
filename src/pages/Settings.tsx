@@ -8,6 +8,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { DayPicker, getDefaultClassNames } from "react-day-picker";
 import { zhCN } from "react-day-picker/locale";
 import { sileo } from "sileo";
+import { useNavigate } from "react-router-dom";
 import StickyHeader from "../components/StickyHeader.tsx";
 import {
   getSettings,
@@ -16,12 +17,15 @@ import {
   type ColorMode,
 } from "../lib/settings.ts";
 import { db } from "../lib/db.ts";
+import { getAuthSession, logout } from "../lib/auth.ts";
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState<SettingsType>(getSettings);
   const [exportDone, setExportDone] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [checking, setChecking] = useState(false);
+  const session = getAuthSession();
   const defaultClassNames = getDefaultClassNames();
 
   const {
@@ -164,6 +168,12 @@ export default function Settings() {
     sileo.success({ title: "已清除", description: "所有记录已删除" });
   }
 
+  async function handleLogout() {
+    await logout();
+    sileo.success({ title: "已退出登录" });
+    navigate("/auth/login", { replace: true });
+  }
+
   return (
     <div className="max-w-lg mx-auto pb-4">
       <StickyHeader>
@@ -172,6 +182,26 @@ export default function Settings() {
         </h1>
       </StickyHeader>
       <div className="px-4">
+        <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+          账号
+        </p>
+        <div className="space-y-3 mb-8">
+          <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
+            <p className="text-sm font-bold text-gray-800 dark:text-white">当前账号</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {session?.user.phone ?? "未登录"}
+            </p>
+            <div className="mt-4">
+              <button
+                onClick={handleLogout}
+                className="rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs font-bold text-gray-500 dark:text-gray-400"
+              >
+                退出登录
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Kick Settings Section */}
         <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
           胎动设置

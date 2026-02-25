@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InviteCodeStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  DISABLED
+}
+
+model User {
+  id            String            @id @default(cuid())
+  phone         String            @unique
+  passwordHash  String
+  nickname      String?
+  inviteBound   Boolean           @default(false)
+  status        String            @default("active")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  sessions      AuthSession[]
+  redemptions   InviteRedemption[]
+  syncSnapshots SyncSnapshot[]
+}
+
+model AuthSession {
+  id               String    @id @default(cuid())
+  userId           String
+  refreshTokenHash String
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+  revokedAt        DateTime?
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model InviteCode {
+  id         String            @id @default(cuid())
+  code       String            @unique
+  status     InviteCodeStatus  @default(ACTIVE)
+  maxUses    Int               @default(1)
+  usedCount  Int               @default(0)
+  expiresAt  DateTime?
+  createdBy  String?
+  createdAt  DateTime          @default(now())
+  redemptions InviteRedemption[]
+
+  @@index([status])
+}
+
+model InviteRedemption {
+  id           String   @id @default(cuid())
+  inviteCodeId String
+  userId       String
+  redeemedAt   DateTime @default(now())
+  deviceId     String?
+  ip           String?
+  inviteCode   InviteCode @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([inviteCodeId, userId])
+  @@index([userId])
+}
+
+model SyncSnapshot {
+  id         String   @id @default(cuid())
+  userId     String
+  payload    Json
+  uploadedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, uploadedAt])
+}

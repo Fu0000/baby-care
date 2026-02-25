@@ -7,6 +7,8 @@ import { getDaysUntilDue, getWeeksPregnant } from '../lib/settings.ts'
 import { isSameDay } from '../lib/time.ts'
 import { formatTimeSinceLastFeed } from '../lib/feeding-helpers.ts'
 import { getOrderedTools } from '../lib/tools.tsx'
+import { hasInviteAccess } from '../lib/auth.ts'
+import { sileo } from 'sileo'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -34,6 +36,7 @@ export default function Home() {
   const weeksPregnant = getWeeksPregnant()
   const greeting = getGreeting()
   const tools = getOrderedTools()
+  const hasAccess = hasInviteAccess()
 
   useEffect(() => {
     loadData()
@@ -64,6 +67,19 @@ export default function Home() {
     if (feeds.length > 0) {
       setLastFeedAt(feeds[0].startedAt)
     }
+  }
+
+  function gotoProtected(path: string): void {
+    if (hasInviteAccess()) {
+      navigate(path)
+      return
+    }
+
+    sileo.info({
+      title: '请先登录',
+      description: '该功能需要登录并绑定邀请码后使用',
+    })
+    navigate(`/auth/login?next=${encodeURIComponent(path)}`)
   }
 
   return (
@@ -142,7 +158,7 @@ export default function Home() {
         {/* Active Kick Session Banner */}
         {activeKickSession && (
           <button
-            onClick={() => navigate('/tools/kick-counter/session/' + activeKickSession.id)}
+            onClick={() => gotoProtected('/tools/kick-counter/session/' + activeKickSession.id)}
             className="w-full flex items-center gap-3 bg-duo-green/10 dark:bg-duo-green/15 rounded-2xl px-5 py-4 mb-6 active:scale-[0.98] transition-transform"
           >
             <span className="relative flex h-3 w-3 shrink-0">
@@ -173,7 +189,7 @@ export default function Home() {
             {tools.map(tool => (
               <button
                 key={tool.id}
-                onClick={() => tool.available && navigate(tool.path)}
+                onClick={() => tool.available && gotoProtected(tool.path)}
                 className={`rounded-2xl py-5 px-4 min-h-[7.5rem] flex flex-col items-center justify-center text-center transition-all duration-150 ${
                   tool.available
                     ? 'bg-white dark:bg-[#16213e] border border-gray-200 dark:border-gray-700/60 active:scale-[0.96]'
@@ -195,6 +211,13 @@ export default function Home() {
         </div>
 
         {/* Disclaimer */}
+        {!hasAccess && (
+          <div className="rounded-2xl border border-duo-orange/30 bg-duo-orange/10 px-4 py-3">
+            <p className="text-xs font-bold text-duo-orange">
+              当前为游客模式，记录与历史功能需登录并绑定邀请码后使用。
+            </p>
+          </div>
+        )}
         <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-6 mb-4 px-6">
           本应用仅为记录工具，不提供医学建议。如有异常请咨询医生。
         </p>

@@ -30,6 +30,34 @@ pnpm build     # 类型检查 + 生产构建
 pnpm preview   # 预览生产构建
 ```
 
+## 后端服务（NestJS + PostgreSQL + Redis）
+
+项目已新增 `apps/api` 后端，包含账号登录、邀请码绑定、同步接口与邀请码管理接口。
+
+### 1. 启动依赖
+
+```bash
+docker compose up -d
+```
+
+### 2. 初始化后端环境
+
+```bash
+cp apps/api/.env.example apps/api/.env
+pnpm install
+pnpm prisma:generate
+pnpm prisma:migrate
+```
+
+### 3. 启动前后端
+
+```bash
+pnpm dev:web   # 前端，默认 http://localhost:5173
+pnpm dev:api   # 后端，默认 http://localhost:3000
+```
+
+前端可通过 `.env` 中 `VITE_API_BASE_URL` 指向后端地址（默认 `http://localhost:3000`）。
+
 ## 许可证
 
 MIT
