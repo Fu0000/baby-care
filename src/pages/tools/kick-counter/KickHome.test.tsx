@@ -7,6 +7,23 @@ import { db } from '../../../lib/db.ts'
 const { mockNavigate } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
 }))
+const TEST_USER_ID = 'test-user-1'
+
+function mockLoggedInUser() {
+  localStorage.setItem(
+    'babycare-auth-session',
+    JSON.stringify({
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+      user: {
+        id: TEST_USER_ID,
+        phone: '13800000000',
+        nickname: '测试用户',
+        inviteBound: true,
+      },
+    }),
+  )
+}
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -20,6 +37,7 @@ describe('KickHome', () => {
   beforeEach(() => {
     mockNavigate.mockReset()
     vi.spyOn(Math, 'random').mockReturnValue(0.9)
+    mockLoggedInUser()
   })
 
   it('starts a new kick session and navigates to session page', async () => {
@@ -31,6 +49,7 @@ describe('KickHome', () => {
     await waitFor(async () => {
       const sessions = await db.sessions.toArray()
       expect(sessions).toHaveLength(1)
+      expect(sessions[0]?.userId).toBe(TEST_USER_ID)
       expect(sessions[0]?.endedAt).toBeNull()
       expect(sessions[0]?.kickCount).toBe(0)
     })
@@ -46,6 +65,7 @@ describe('KickHome', () => {
 
     await db.sessions.put({
       id: sessionId,
+      userId: TEST_USER_ID,
       startedAt: Date.now(),
       endedAt: null,
       taps: [],
@@ -67,6 +87,7 @@ describe('KickHome', () => {
 
     await db.sessions.put({
       id: sessionId,
+      userId: TEST_USER_ID,
       startedAt: Date.now(),
       endedAt: Date.now() + 300000,
       taps: [{ timestamp: Date.now(), windowId: 1 }],

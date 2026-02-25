@@ -13,6 +13,7 @@ import { getSettings } from '../lib/settings.ts'
 import { formatDate, formatTime, formatDuration, isSameDay } from '../lib/time.ts'
 import { getFeedingLabel, getFeedingEmoji, getFeedingColor, getFeedingBgColor, formatFeedingDuration } from '../lib/feeding-helpers.ts'
 import { getChartPoints, getTimeline } from './history-helpers.ts'
+import { useCurrentUserId } from '../lib/data-scope.ts'
 
 function formatMs(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -32,21 +33,45 @@ export default function History() {
   const [chartRange, setChartRange] = useState<7 | 30>(7)
   const [activeTab, setActiveTab] = useState<string | null>('kicks')
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
+  const userId = useCurrentUserId()
 
   useEffect(() => {
-    db.sessions.orderBy('startedAt').reverse().toArray().then(setKickSessions)
-    db.contractionSessions.orderBy('startedAt').reverse().toArray().then(setContractionSessions)
-    db.feedingRecords.orderBy('startedAt').reverse().toArray().then(setFeedingRecords)
-  }, [])
+    if (!userId) {
+      setKickSessions([])
+      setContractionSessions([])
+      setFeedingRecords([])
+      setContractions({})
+      return
+    }
+
+    void (async () => {
+      const [kick, contraction, feeding] = await Promise.all([
+        db.sessions.where('userId').equals(userId).toArray(),
+        db.contractionSessions.where('userId').equals(userId).toArray(),
+        db.feedingRecords.where('userId').equals(userId).toArray(),
+      ])
+      kick.sort((a, b) => b.startedAt - a.startedAt)
+      contraction.sort((a, b) => b.startedAt - a.startedAt)
+      feeding.sort((a, b) => b.startedAt - a.startedAt)
+      setKickSessions(kick)
+      setContractionSessions(contraction)
+      setFeedingRecords(feeding)
+    })()
+  }, [userId])
 
   async function loadContractions(sessionId: string) {
-    if (contractions[sessionId]) return
-    const list = await db.contractions.where('sessionId').equals(sessionId).sortBy('startedAt')
+    if (!userId || contractions[sessionId]) return
+    const list = await db.contractions.where('[userId+sessionId]').equals([userId, sessionId]).sortBy('startedAt')
     setContractions(prev => ({ ...prev, [sessionId]: list }))
   }
 
   async function handleDeleteSession() {
-    if (!deletingSessionId) return
+    if (!deletingSessionId || !userId) return
+    const target = await db.sessions.get(deletingSessionId)
+    if (!target || target.userId !== userId) {
+      setDeletingSessionId(null)
+      return
+    }
     await db.sessions.delete(deletingSessionId)
     setKickSessions(prev => prev.filter(s => s.id !== deletingSessionId))
     setExpandedId(null)

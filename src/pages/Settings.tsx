@@ -18,6 +18,7 @@ import {
 } from "../lib/settings.ts";
 import { db } from "../lib/db.ts";
 import { getAuthSession, logout } from "../lib/auth.ts";
+import { useCurrentUserId } from "../lib/data-scope.ts";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export default function Settings() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [checking, setChecking] = useState(false);
   const session = getAuthSession();
+  const userId = useCurrentUserId();
   const defaultClassNames = getDefaultClassNames();
 
   const {
@@ -78,6 +80,10 @@ export default function Settings() {
   }
 
   async function handleExport() {
+    if (!userId) {
+      sileo.error({ title: "请先登录" });
+      return;
+    }
     const [
       sessions,
       contractionSessions,
@@ -85,11 +91,11 @@ export default function Settings() {
       hospitalBagItems,
       feedingRecords,
     ] = await Promise.all([
-      db.sessions.toArray(),
-      db.contractionSessions.toArray(),
-      db.contractions.toArray(),
-      db.hospitalBagItems.toArray(),
-      db.feedingRecords.toArray(),
+      db.sessions.where("userId").equals(userId).toArray(),
+      db.contractionSessions.where("userId").equals(userId).toArray(),
+      db.contractions.where("userId").equals(userId).toArray(),
+      db.hospitalBagItems.where("userId").equals(userId).toArray(),
+      db.feedingRecords.where("userId").equals(userId).toArray(),
     ]);
     const data = JSON.stringify(
       {
@@ -114,6 +120,11 @@ export default function Settings() {
   }
 
   async function handleImport() {
+    if (!userId) {
+      sileo.error({ title: "请先登录" });
+      return;
+    }
+
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json";
@@ -125,28 +136,34 @@ export default function Settings() {
       let count = 0;
       // Support both old format (array) and new format (object with keys)
       if (Array.isArray(data)) {
-        await db.sessions.bulkPut(data);
-        count = data.length;
+        const normalized = data.map((item) => ({ ...item, userId }));
+        await db.sessions.bulkPut(normalized);
+        count = normalized.length;
       } else {
         if (data.sessions) {
-          await db.sessions.bulkPut(data.sessions);
-          count += data.sessions.length;
+          const sessions = data.sessions.map((item: Record<string, unknown>) => ({ ...item, userId }));
+          await db.sessions.bulkPut(sessions);
+          count += sessions.length;
         }
         if (data.contractionSessions) {
-          await db.contractionSessions.bulkPut(data.contractionSessions);
-          count += data.contractionSessions.length;
+          const contractionSessions = data.contractionSessions.map((item: Record<string, unknown>) => ({ ...item, userId }));
+          await db.contractionSessions.bulkPut(contractionSessions);
+          count += contractionSessions.length;
         }
         if (data.contractions) {
-          await db.contractions.bulkPut(data.contractions);
-          count += data.contractions.length;
+          const contractions = data.contractions.map((item: Record<string, unknown>) => ({ ...item, userId }));
+          await db.contractions.bulkPut(contractions);
+          count += contractions.length;
         }
         if (data.hospitalBagItems) {
-          await db.hospitalBagItems.bulkPut(data.hospitalBagItems);
-          count += data.hospitalBagItems.length;
+          const hospitalBagItems = data.hospitalBagItems.map((item: Record<string, unknown>) => ({ ...item, userId }));
+          await db.hospitalBagItems.bulkPut(hospitalBagItems);
+          count += hospitalBagItems.length;
         }
         if (data.feedingRecords) {
-          await db.feedingRecords.bulkPut(data.feedingRecords);
-          count += data.feedingRecords.length;
+          const feedingRecords = data.feedingRecords.map((item: Record<string, unknown>) => ({ ...item, userId }));
+          await db.feedingRecords.bulkPut(feedingRecords);
+          count += feedingRecords.length;
         }
       }
       sileo.success({
@@ -158,12 +175,17 @@ export default function Settings() {
   }
 
   async function handleClear() {
+    if (!userId) {
+      sileo.error({ title: "请先登录" });
+      return;
+    }
+
     await Promise.all([
-      db.sessions.clear(),
-      db.contractionSessions.clear(),
-      db.contractions.clear(),
-      db.hospitalBagItems.clear(),
-      db.feedingRecords.clear(),
+      db.sessions.where("userId").equals(userId).delete(),
+      db.contractionSessions.where("userId").equals(userId).delete(),
+      db.contractions.where("userId").equals(userId).delete(),
+      db.hospitalBagItems.where("userId").equals(userId).delete(),
+      db.feedingRecords.where("userId").equals(userId).delete(),
     ]);
     sileo.success({ title: "已清除", description: "所有记录已删除" });
   }

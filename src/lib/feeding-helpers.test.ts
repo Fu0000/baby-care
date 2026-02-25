@@ -20,6 +20,7 @@ function makeRecord(type: FeedingType, overrides: Partial<FeedingRecord> = {}): 
   const now = Date.now()
   return {
     id: crypto.randomUUID(),
+    userId: 'test-user-1',
     type,
     startedAt: now,
     endedAt: now,

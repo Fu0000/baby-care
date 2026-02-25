@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { IconChildHeadOutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import { IconGlassFillDuo18 } from 'nucleo-ui-fill-duo-18'
 import { db, type KickSession, type FeedingRecord } from '../lib/db.ts'
-import { getDaysUntilDue, getWeeksPregnant } from '../lib/settings.ts'
+import { getDaysUntilDue, getSettings, getWeeksPregnant } from '../lib/settings.ts'
 import { isSameDay } from '../lib/time.ts'
 import { formatTimeSinceLastFeed } from '../lib/feeding-helpers.ts'
 import { getOrderedTools } from '../lib/tools.tsx'
 import { hasInviteAccess } from '../lib/auth.ts'
+import { useCurrentUserId } from '../lib/data-scope.ts'
+import { getJourneyCard, getKickSafetyNotice } from '../lib/journey.ts'
 import { sileo } from 'sileo'
 
 function getGreeting(): string {
@@ -32,18 +34,34 @@ export default function Home() {
   const [streak, setStreak] = useState(0)
   const [lastFeedAt, setLastFeedAt] = useState<number | null>(null)
   const [activeKickSession, setActiveKickSession] = useState<KickSession | null>(null)
+  const userId = useCurrentUserId()
   const daysUntilDue = getDaysUntilDue()
   const weeksPregnant = getWeeksPregnant()
+  const settings = getSettings()
+  const [currentHour] = useState<number>(() => new Date().getHours())
   const greeting = getGreeting()
   const tools = getOrderedTools()
   const hasAccess = hasInviteAccess()
-
-  useEffect(() => {
-    loadData()
-  }, [])
+  const journey = getJourneyCard(weeksPregnant, daysUntilDue)
+  const safetyNotice = getKickSafetyNotice({
+    weeksPregnant,
+    todayKicks,
+    goalCount: settings.goalCount,
+    currentHour,
+    activeKickSession: activeKickSession !== null,
+  })
 
   async function loadData() {
-    const sessions: KickSession[] = await db.sessions.orderBy('startedAt').reverse().toArray()
+    if (!userId) {
+      setTodayKicks(0)
+      setStreak(0)
+      setLastFeedAt(null)
+      setActiveKickSession(null)
+      return
+    }
+
+    const sessions: KickSession[] = await db.sessions.where('userId').equals(userId).toArray()
+    sessions.sort((a, b) => b.startedAt - a.startedAt)
     const today = sessions.filter(s => isSameDay(s.startedAt, Date.now()))
     setTodayKicks(today.reduce((sum, s) => sum + s.kickCount, 0))
     setActiveKickSession(sessions.find(s => s.endedAt === null) ?? null)
@@ -63,11 +81,18 @@ export default function Home() {
     setStreak(currentStreak)
 
     // Load last feeding
-    const feeds: FeedingRecord[] = await db.feedingRecords.orderBy('startedAt').reverse().limit(1).toArray()
+    const feeds: FeedingRecord[] = await db.feedingRecords.where('userId').equals(userId).toArray()
+    feeds.sort((a, b) => b.startedAt - a.startedAt)
     if (feeds.length > 0) {
       setLastFeedAt(feeds[0].startedAt)
+    } else {
+      setLastFeedAt(null)
     }
   }
+
+  useEffect(() => {
+    void loadData()
+  }, [userId])
 
   function gotoProtected(path: string): void {
     if (hasInviteAccess()) {
@@ -154,6 +179,52 @@ export default function Home() {
             )}
           </div>
         </div>
+
+        {/* Weekly Journey */}
+        <div className="mb-6">
+          <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+            本周重点
+          </p>
+          <div
+            className={`rounded-2xl border px-5 py-4 ${
+              journey.tone === 'orange'
+                ? 'border-duo-orange/40 bg-duo-orange/10 dark:bg-duo-orange/15'
+                : journey.tone === 'purple'
+                  ? 'border-duo-purple/40 bg-duo-purple/10 dark:bg-duo-purple/15'
+                  : 'border-duo-green/40 bg-duo-green/10 dark:bg-duo-green/15'
+            }`}
+          >
+            <p className="text-sm font-extrabold text-gray-800 dark:text-white">{journey.title}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{journey.subtitle}</p>
+            <div className="mt-3 space-y-2">
+              {journey.tasks.map((task) => (
+                <div key={task} className="flex items-start gap-2">
+                  <span className="text-[11px] font-extrabold text-gray-500 dark:text-gray-400 mt-0.5">•</span>
+                  <p className="text-xs font-bold text-gray-700 dark:text-gray-200 leading-5">{task}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Kick Safety Notice */}
+        {safetyNotice && (
+          <div
+            className={`mb-6 rounded-2xl border px-4 py-3 ${
+              safetyNotice.level === 'warn'
+                ? 'border-duo-red/35 bg-duo-red/10'
+                : 'border-duo-blue/35 bg-duo-blue/10'
+            }`}
+          >
+            <p
+              className={`text-xs font-bold ${
+                safetyNotice.level === 'warn' ? 'text-duo-red' : 'text-duo-blue'
+              }`}
+            >
+              {safetyNotice.message}
+            </p>
+          </div>
+        )}
 
         {/* Active Kick Session Banner */}
         {activeKickSession && (

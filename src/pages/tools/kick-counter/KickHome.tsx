@@ -7,6 +7,7 @@ import { formatDate } from '../../../lib/time.ts'
 import { isSameDay } from '../../../lib/time.ts'
 import StickyHeader from '../../../components/StickyHeader.tsx'
 import TipBanner from '../../../components/TipBanner.tsx'
+import { useCurrentUserId } from '../../../lib/data-scope.ts'
 
 export default function KickHome() {
   const navigate = useNavigate()
@@ -14,14 +15,19 @@ export default function KickHome() {
   const [activeSession, setActiveSession] = useState<KickSession | null>(null)
   const [streak, setStreak] = useState(0)
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
+  const userId = useCurrentUserId()
   const settings = getSettings()
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
   async function loadData() {
-    const sessions = await db.sessions.orderBy('startedAt').reverse().toArray()
+    if (!userId) {
+      setTodaySessions([])
+      setActiveSession(null)
+      setStreak(0)
+      return
+    }
+
+    const sessions = await db.sessions.where('userId').equals(userId).toArray()
+    sessions.sort((a, b) => b.startedAt - a.startedAt)
     const today = sessions.filter(s => isSameDay(s.startedAt, Date.now()))
     setTodaySessions(today)
     setActiveSession(sessions.find(s => s.endedAt === null) ?? null)
@@ -42,10 +48,16 @@ export default function KickHome() {
     setStreak(currentStreak)
   }
 
+  useEffect(() => {
+    void loadData()
+  }, [userId])
+
   async function startNewSession() {
+    if (!userId) return
     const id = crypto.randomUUID()
     await db.sessions.put({
       id,
+      userId,
       startedAt: Date.now(),
       endedAt: null,
       taps: [],
@@ -56,7 +68,12 @@ export default function KickHome() {
   }
 
   async function handleDeleteSession() {
-    if (!deletingSessionId) return
+    if (!deletingSessionId || !userId) return
+    const target = await db.sessions.get(deletingSessionId)
+    if (!target || target.userId !== userId) {
+      setDeletingSessionId(null)
+      return
+    }
     await db.sessions.delete(deletingSessionId)
     setTodaySessions(prev => prev.filter(s => s.id !== deletingSessionId))
     if (activeSession?.id === deletingSessionId) setActiveSession(null)

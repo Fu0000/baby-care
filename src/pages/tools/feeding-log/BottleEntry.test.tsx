@@ -9,6 +9,23 @@ const { mockNavigate, mockSuccess, mockError } = vi.hoisted(() => ({
   mockSuccess: vi.fn(),
   mockError: vi.fn(),
 }))
+const TEST_USER_ID = 'test-user-1'
+
+function mockLoggedInUser() {
+  localStorage.setItem(
+    'babycare-auth-session',
+    JSON.stringify({
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+      user: {
+        id: TEST_USER_ID,
+        phone: '13800000000',
+        nickname: '测试用户',
+        inviteBound: true,
+      },
+    }),
+  )
+}
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -30,6 +47,7 @@ describe('BottleEntry', () => {
     mockNavigate.mockReset()
     mockSuccess.mockReset()
     mockError.mockReset()
+    mockLoggedInUser()
   })
 
   it('saves bottle record and returns to feeding home', async () => {
@@ -41,6 +59,7 @@ describe('BottleEntry', () => {
     await waitFor(async () => {
       const records = await db.feedingRecords.toArray()
       expect(records).toHaveLength(1)
+      expect(records[0]?.userId).toBe(TEST_USER_ID)
       expect(records[0]?.type).toBe('bottle')
       expect(records[0]?.volumeMl).toBe(60)
       expect(records[0]?.endedAt).toBe(records[0]?.startedAt)

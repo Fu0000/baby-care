@@ -4,12 +4,18 @@ import { NumberField } from '@base-ui/react/number-field'
 import { sileo } from 'sileo'
 import { db, type FeedingRecord } from '../../../lib/db.ts'
 import { triggerHaptic } from '../../../lib/haptics.ts'
+import { useCurrentUserId } from '../../../lib/data-scope.ts'
 
 export default function BottleEntry() {
   const navigate = useNavigate()
   const [volumeMl, setVolumeMl] = useState<number | null>(60)
+  const userId = useCurrentUserId()
 
   async function handleSave() {
+    if (!userId) {
+      sileo.error({ title: '请先登录' })
+      return
+    }
     if (volumeMl === null || volumeMl <= 0) {
       sileo.error({ title: '请输入奶量' })
       return
@@ -18,6 +24,7 @@ export default function BottleEntry() {
     const now = Date.now()
     const record: FeedingRecord = {
       id: crypto.randomUUID(),
+      userId,
       type: 'bottle',
       startedAt: now,
       endedAt: now,

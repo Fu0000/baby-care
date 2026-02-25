@@ -6,6 +6,7 @@ function makeKickSession(overrides: Partial<KickSession> = {}): KickSession {
   const now = Date.now()
   return {
     id: crypto.randomUUID(),
+    userId: 'test-user-1',
     startedAt: now,
     endedAt: now,
     taps: [],

@@ -8,6 +8,23 @@ const { mockNavigate, mockConfetti } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockConfetti: vi.fn(),
 }))
+const TEST_USER_ID = 'test-user-1'
+
+function mockLoggedInUser() {
+  localStorage.setItem(
+    'babycare-auth-session',
+    JSON.stringify({
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+      user: {
+        id: TEST_USER_ID,
+        phone: '13800000000',
+        nickname: '测试用户',
+        inviteBound: true,
+      },
+    }),
+  )
+}
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -33,13 +50,14 @@ describe('HospitalBagHome', () => {
     mockNavigate.mockReset()
     mockConfetti.mockReset()
     await db.hospitalBagItems.clear()
+    mockLoggedInUser()
   })
 
   it('seeds preset items on first load', async () => {
     render(<HospitalBagHome />)
 
     expect(await screen.findByText('0/30 已准备')).toBeInTheDocument()
-    expect(await db.hospitalBagItems.count()).toBe(30)
+    expect(await db.hospitalBagItems.where('userId').equals(TEST_USER_ID).count()).toBe(30)
   })
 
   it('updates progress when toggling an item', async () => {
@@ -53,7 +71,7 @@ describe('HospitalBagHome', () => {
       expect(screen.getByText('1/30 已准备')).toBeInTheDocument()
     })
 
-    const first = await db.hospitalBagItems.orderBy('sortOrder').first()
+    const first = (await db.hospitalBagItems.where('userId').equals(TEST_USER_ID).sortBy('sortOrder'))[0]
     expect(first?.checked).toBe(true)
   })
 
@@ -67,7 +85,7 @@ describe('HospitalBagHome', () => {
 
     expect(await screen.findByText('婴儿连体衣')).toBeInTheDocument()
 
-    const customItems = await db.hospitalBagItems.filter((item) => item.isCustom).toArray()
+    const customItems = await db.hospitalBagItems.where('userId').equals(TEST_USER_ID).filter((item) => item.isCustom).toArray()
     expect(customItems.some((item) => item.name === '婴儿连体衣')).toBe(true)
   })
 })

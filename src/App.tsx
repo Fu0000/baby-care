@@ -13,6 +13,8 @@ import HospitalBagHome from "./pages/tools/hospital-bag/HospitalBagHome.tsx";
 import FeedingLogHome from "./pages/tools/feeding-log/FeedingLogHome.tsx";
 import FeedingSession from "./pages/tools/feeding-log/FeedingSession.tsx";
 import BottleEntry from "./pages/tools/feeding-log/BottleEntry.tsx";
+import ParentChildPlay from "./pages/tools/parent-child-play/ParentChildPlay.tsx";
+import ReminderCenter from "./pages/tools/reminders/ReminderCenter.tsx";
 import RequireAuth from "./components/guards/RequireAuth.tsx";
 import RequireOnboarding from "./components/guards/RequireOnboarding.tsx";
 import Onboarding from "./pages/onboarding/Onboarding.tsx";
@@ -21,10 +23,13 @@ import Register from "./pages/auth/Register.tsx";
 import InviteBind from "./pages/invite/InviteBind.tsx";
 
 export default function App() {
+  const enableAgentation =
+    import.meta.env.DEV && import.meta.env.VITE_DISABLE_AGENTATION !== "1";
+
   return (
     <>
       <Toaster position="top-center" options={{ fill: "var(--sileo-fill)" }} />
-      {import.meta.env.DEV && <Agentation />}
+      {enableAgentation && <Agentation />}
       <Routes>
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/auth/login" element={<Login />} />
@@ -48,6 +53,8 @@ export default function App() {
             />
             <Route path="/tools/hospital-bag" element={<HospitalBagHome />} />
             <Route path="/tools/feeding-log" element={<FeedingLogHome />} />
+            <Route path="/tools/reminders" element={<ReminderCenter />} />
+            <Route path="/tools/parent-child-play" element={<ParentChildPlay />} />
           </Route>
           <Route
             path="/tools/kick-counter/session/:sessionId"

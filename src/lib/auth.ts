@@ -1,6 +1,7 @@
 import { apiRequest } from './api/client.ts'
 
 const AUTH_KEY = 'babycare-auth-session'
+export const AUTH_SESSION_CHANGED_EVENT = 'babycare:auth-session-changed'
 
 export interface AuthUser {
   id: string
@@ -27,17 +28,19 @@ export function getAuthSession(): AuthSession | null {
   try {
     return JSON.parse(raw) as AuthSession
   } catch {
-    localStorage.removeItem(AUTH_KEY)
+    clearAuthSession()
     return null
   }
 }
 
 export function saveAuthSession(session: AuthSession): void {
   localStorage.setItem(AUTH_KEY, JSON.stringify(session))
+  emitAuthSessionChanged()
 }
 
 export function clearAuthSession(): void {
   localStorage.removeItem(AUTH_KEY)
+  emitAuthSessionChanged()
 }
 
 export function isLoggedIn(): boolean {
@@ -63,6 +66,11 @@ export function setInviteBound(inviteBound: boolean): void {
       inviteBound,
     },
   })
+}
+
+function emitAuthSessionChanged(): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT))
 }
 
 export async function registerWithPassword(input: {
@@ -99,6 +107,7 @@ export async function refreshSession(): Promise<void> {
     {
       method: 'POST',
       body: { refreshToken: session.refreshToken },
+      retryOnAuthFailure: false,
     },
   )
 
@@ -149,6 +158,7 @@ export async function logout(): Promise<void> {
       await apiRequest<void>('/v1/auth/logout', {
         method: 'POST',
         accessToken: token,
+        retryOnAuthFailure: false,
       })
     } catch {
       // noop: local session will still be cleared

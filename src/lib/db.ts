@@ -7,6 +7,7 @@ export interface Tap {
 
 export interface KickSession {
   id: string
+  userId: string
   startedAt: number
   endedAt: number | null
   taps: Tap[]
@@ -16,6 +17,7 @@ export interface KickSession {
 
 export interface Contraction {
   id: string
+  userId: string
   sessionId: string
   startedAt: number
   endedAt: number | null
@@ -25,6 +27,7 @@ export interface Contraction {
 
 export interface ContractionSession {
   id: string
+  userId: string
   startedAt: number
   endedAt: number | null
   contractionCount: number
@@ -35,6 +38,7 @@ export interface ContractionSession {
 
 export interface HospitalBagItem {
   id: string
+  userId: string
   category: 'mom' | 'baby' | 'documents'
   name: string
   checked: boolean
@@ -47,6 +51,7 @@ export type FeedingType = 'breast_left' | 'breast_right' | 'bottle' | 'pump_left
 
 export interface FeedingRecord {
   id: string
+  userId: string
   type: FeedingType
   startedAt: number
   endedAt: number | null
@@ -86,6 +91,14 @@ db.version(4).stores({
   contractions: 'id, sessionId, startedAt',
   hospitalBagItems: 'id, category, sortOrder',
   feedingRecords: 'id, type, startedAt',
+})
+
+db.version(5).stores({
+  sessions: 'id, userId, [userId+startedAt], startedAt',
+  contractionSessions: 'id, userId, [userId+startedAt], startedAt',
+  contractions: 'id, userId, sessionId, [userId+sessionId], [userId+startedAt], startedAt',
+  hospitalBagItems: 'id, userId, category, [userId+category], [userId+sortOrder], sortOrder',
+  feedingRecords: 'id, userId, type, [userId+startedAt], startedAt',
 })
 
 export { db }

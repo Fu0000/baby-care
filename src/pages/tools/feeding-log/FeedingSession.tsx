@@ -10,6 +10,7 @@ import {
   isPumpType,
   getOppositeSide,
 } from '../../../lib/feeding-helpers.ts'
+import { useCurrentUserId } from '../../../lib/data-scope.ts'
 
 function formatTimer(ms: number): string {
   const totalSec = Math.floor(ms / 1000)
@@ -21,6 +22,7 @@ function formatTimer(ms: number): string {
 export default function FeedingSession() {
   const navigate = useNavigate()
   const { recordId } = useParams<{ recordId: string }>()
+  const userId = useCurrentUserId()
   const [record, setRecord] = useState<FeedingRecord | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [stopped, setStopped] = useState(false)
@@ -28,17 +30,22 @@ export default function FeedingSession() {
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined)
 
   useEffect(() => {
-    if (!recordId) return
+    if (!recordId || !userId) {
+      navigate('/tools/feeding-log', { replace: true })
+      return
+    }
     db.feedingRecords.get(recordId).then(r => {
-      if (r) {
+      if (r && r.userId === userId) {
         setRecord(r)
         if (r.endedAt) {
           setStopped(true)
           setElapsed(r.duration ?? 0)
         }
+      } else {
+        navigate('/tools/feeding-log', { replace: true })
       }
     })
-  }, [recordId])
+  }, [navigate, recordId, userId])
 
   // Live timer
   useEffect(() => {
@@ -53,7 +60,7 @@ export default function FeedingSession() {
   }, [record, stopped])
 
   async function handleStop() {
-    if (!record) return
+    if (!record || !userId || record.userId !== userId) return
     triggerHaptic('medium')
     const now = Date.now()
     const duration = now - record.startedAt
@@ -69,7 +76,7 @@ export default function FeedingSession() {
   }
 
   async function handleSwitchSide() {
-    if (!record || !isBreastType(record.type)) return
+    if (!record || !userId || record.userId !== userId || !isBreastType(record.type)) return
     // End current side
     const now = Date.now()
     const duration = now - record.startedAt
@@ -86,6 +93,7 @@ export default function FeedingSession() {
     const newId = crypto.randomUUID()
     const newRecord: FeedingRecord = {
       id: newId,
+      userId,
       type: oppositeSide,
       startedAt: now,
       endedAt: null,
@@ -103,7 +111,7 @@ export default function FeedingSession() {
   }
 
   async function handleSaveVolume() {
-    if (!record) return
+    if (!record || !userId || record.userId !== userId) return
     triggerHaptic('light')
     await db.feedingRecords.put({
       ...record,
@@ -114,7 +122,7 @@ export default function FeedingSession() {
   }
 
   async function handleFinish() {
-    if (!record) return
+    if (!record || !userId || record.userId !== userId) return
     // For pump, save volume first if entered
     if (isPumpType(record.type) && volumeMl !== null) {
       await db.feedingRecords.put({
@@ -126,7 +134,7 @@ export default function FeedingSession() {
   }
 
   async function handleDiscard() {
-    if (!record) return
+    if (!record || !userId || record.userId !== userId) return
     await db.feedingRecords.delete(record.id)
     navigate('/tools/feeding-log', { replace: true })
   }

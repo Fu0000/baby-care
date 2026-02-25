@@ -9,6 +9,7 @@ import StickyHeader from '../../../components/StickyHeader.tsx'
 import { db, type HospitalBagItem } from '../../../lib/db.ts'
 import { CATEGORIES, PRESET_ITEMS, type BagCategory } from '../../../lib/hospital-bag-presets.ts'
 import { triggerHaptic } from '../../../lib/haptics.ts'
+import { useCurrentUserId } from '../../../lib/data-scope.ts'
 
 function CheckIcon(props: React.ComponentProps<'svg'>) {
   return (
@@ -24,23 +25,30 @@ export default function HospitalBagHome() {
   const [expandedCategory, setExpandedCategory] = useState<BagCategory | null>('mom')
   const [newItemTexts, setNewItemTexts] = useState<Record<BagCategory, string>>({ mom: '', baby: '', documents: '' })
   const celebratedRef = useRef(false)
-
-  useEffect(() => {
-    initItems()
-  }, [])
+  const userId = useCurrentUserId()
 
   async function initItems() {
-    const count = await db.hospitalBagItems.count()
-    if (count === 0) {
-      await seedPresets()
+    if (!userId) {
+      setItems([])
+      return
     }
-    const all = await db.hospitalBagItems.orderBy('sortOrder').toArray()
+    const count = await db.hospitalBagItems.where('userId').equals(userId).count()
+    if (count === 0) {
+      await seedPresets(userId)
+    }
+    const all = await db.hospitalBagItems.where('userId').equals(userId).toArray()
+    all.sort((a, b) => a.sortOrder - b.sortOrder)
     setItems(all)
   }
 
-  async function seedPresets() {
+  useEffect(() => {
+    void initItems()
+  }, [userId])
+
+  async function seedPresets(ownerId: string) {
     const records: HospitalBagItem[] = PRESET_ITEMS.map((item, i) => ({
       id: crypto.randomUUID(),
+      userId: ownerId,
       category: item.category,
       name: item.name,
       checked: false,
@@ -69,6 +77,9 @@ export default function HospitalBagHome() {
   }, [isComplete])
 
   async function toggleItem(id: string, currentChecked: boolean) {
+    if (!userId) return
+    const item = await db.hospitalBagItems.get(id)
+    if (!item || item.userId !== userId) return
     const newChecked = !currentChecked
     await db.hospitalBagItems.update(id, { checked: newChecked })
     setItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked } : i))
@@ -76,11 +87,13 @@ export default function HospitalBagHome() {
   }
 
   async function addCustomItem(category: BagCategory) {
+    if (!userId) return
     const name = newItemTexts[category].trim()
     if (!name) return
     const maxSort = items.length > 0 ? Math.max(...items.map(i => i.sortOrder)) : -1
     const newItem: HospitalBagItem = {
       id: crypto.randomUUID(),
+      userId,
       category,
       name,
       checked: false,
@@ -95,12 +108,16 @@ export default function HospitalBagHome() {
   }
 
   async function deleteCustomItem(id: string) {
+    if (!userId) return
+    const item = await db.hospitalBagItems.get(id)
+    if (!item || item.userId !== userId) return
     await db.hospitalBagItems.delete(id)
     setItems(prev => prev.filter(i => i.id !== id))
   }
 
   async function resetAll() {
-    await db.hospitalBagItems.toCollection().modify({ checked: false })
+    if (!userId) return
+    await db.hospitalBagItems.where('userId').equals(userId).modify({ checked: false })
     setItems(prev => prev.map(i => ({ ...i, checked: false })))
     sileo.success({ title: '已重置', description: '所有物品已取消勾选' })
   }

@@ -42,6 +42,20 @@ export const allTools: ToolCard[] = [
     path: '/tools/feeding-log',
     available: true,
   },
+  {
+    id: 'reminders',
+    title: '提醒中心',
+    icon: <span className="text-[30px] leading-none">🔔</span>,
+    path: '/tools/reminders',
+    available: true,
+  },
+  {
+    id: 'parent-child-play',
+    title: '亲子互动',
+    icon: <span className="text-[30px] leading-none">🧸</span>,
+    path: '/tools/parent-child-play',
+    available: true,
+  },
 ]
 
 /** Reorder tools based on pregnancy stage:

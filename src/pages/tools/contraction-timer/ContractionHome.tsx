@@ -4,6 +4,7 @@ import { IconTimer2OutlineDuo18 } from 'nucleo-ui-outline-duo-18'
 import StickyHeader from '../../../components/StickyHeader.tsx'
 import { db, type ContractionSession } from '../../../lib/db.ts'
 import { formatDate, formatTime, isSameDay } from '../../../lib/time.ts'
+import { useCurrentUserId } from '../../../lib/data-scope.ts'
 
 function formatMs(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -15,23 +16,31 @@ function formatMs(ms: number): string {
 export default function ContractionHome() {
   const navigate = useNavigate()
   const [sessions, setSessions] = useState<ContractionSession[]>([])
-
-  useEffect(() => {
-    loadSessions()
-  }, [])
+  const userId = useCurrentUserId()
 
   async function loadSessions() {
-    const all = await db.contractionSessions.orderBy('startedAt').reverse().toArray()
+    if (!userId) {
+      setSessions([])
+      return
+    }
+    const all = await db.contractionSessions.where('userId').equals(userId).toArray()
+    all.sort((a, b) => b.startedAt - a.startedAt)
     setSessions(all)
   }
+
+  useEffect(() => {
+    void loadSessions()
+  }, [userId])
 
   // Find active (unended) session
   const activeSession = sessions.find(s => s.endedAt === null)
 
   async function startNewSession() {
+    if (!userId) return
     const id = crypto.randomUUID()
     await db.contractionSessions.put({
       id,
+      userId,
       startedAt: Date.now(),
       endedAt: null,
       contractionCount: 0,

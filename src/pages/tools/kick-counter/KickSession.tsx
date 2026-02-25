@@ -12,10 +12,12 @@ import { getEncouragement } from "../../../lib/encouragements.ts";
 import { getRandomTip } from "../../../lib/tips.ts";
 import { Liveline } from "liveline";
 import ProgressRing from "../../../components/ProgressRing.tsx";
+import { useCurrentUserId } from "../../../lib/data-scope.ts";
 
 export default function KickSession() {
   const navigate = useNavigate();
   const { sessionId } = useParams<{ sessionId: string }>();
+  const userId = useCurrentUserId();
   const settings = getSettings();
   const mergeWindowMs = settings.mergeWindowMinutes * 60 * 1000;
 
@@ -59,9 +61,12 @@ export default function KickSession() {
 
   // Load session from DB on mount
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !userId) {
+      navigate("/tools/kick-counter", { replace: true });
+      return;
+    }
     db.sessions.get(sessionId).then((session) => {
-      if (session) {
+      if (session && session.userId === userId) {
         setStartedAt(session.startedAt);
         setTaps(session.taps);
         setKickCount(session.kickCount);
@@ -87,10 +92,12 @@ export default function KickSession() {
             );
           }
         }
+      } else {
+        navigate("/tools/kick-counter", { replace: true });
       }
       setLoaded(true);
     });
-  }, [sessionId]);
+  }, [navigate, sessionId, userId]);
 
   // Elapsed timer
   useEffect(() => {
@@ -130,9 +137,10 @@ export default function KickSession() {
 
   const saveSession = useCallback(
     async (ended: boolean) => {
-      if (!sessionId) return;
+      if (!sessionId || !userId) return;
       await db.sessions.put({
         id: sessionId,
+        userId,
         startedAt,
         endedAt: ended ? Date.now() : null,
         taps,
@@ -140,7 +148,7 @@ export default function KickSession() {
         goalReached,
       });
     },
-    [sessionId, startedAt, taps, kickCount, goalReached],
+    [sessionId, userId, startedAt, taps, kickCount, goalReached],
   );
 
   function handleTap() {

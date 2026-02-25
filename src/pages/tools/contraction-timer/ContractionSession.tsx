@@ -4,6 +4,7 @@ import { AlertDialog } from '@base-ui/react/alert-dialog'
 import { db, type Contraction } from '../../../lib/db.ts'
 import { triggerHaptic } from '../../../lib/haptics.ts'
 import { formatTime } from '../../../lib/time.ts'
+import { useCurrentUserId } from '../../../lib/data-scope.ts'
 
 function formatTimer(ms: number): string {
   const totalSec = Math.floor(ms / 1000)
@@ -23,6 +24,7 @@ function formatMs(ms: number): string {
 export default function ContractionSession() {
   const navigate = useNavigate()
   const { sessionId } = useParams<{ sessionId: string }>()
+  const userId = useCurrentUserId()
   const [contractions, setContractions] = useState<Contraction[]>([])
   const [active, setActive] = useState(false) // is a contraction happening right now?
   const [currentStart, setCurrentStart] = useState<number | null>(null)
@@ -33,13 +35,23 @@ export default function ContractionSession() {
 
   // Load existing contractions for this session
   useEffect(() => {
-    if (!sessionId) return
+    if (!sessionId || !userId) {
+      navigate('/tools/contraction-timer', { replace: true })
+      return
+    }
+
+    db.contractionSessions.get(sessionId).then((session) => {
+      if (!session || session.userId !== userId) {
+        navigate('/tools/contraction-timer', { replace: true })
+      }
+    })
+
     db.contractions
-      .where('sessionId')
-      .equals(sessionId)
+      .where('[userId+sessionId]')
+      .equals([userId, sessionId])
       .sortBy('startedAt')
       .then(setContractions)
-  }, [sessionId])
+  }, [navigate, sessionId, userId])
 
   // Live timer for active contraction
   useEffect(() => {
@@ -55,7 +67,10 @@ export default function ContractionSession() {
   }, [active, currentStart])
 
   const updateSessionSummary = useCallback(async (contractionsList: Contraction[], alert: boolean) => {
-    if (!sessionId) return
+    if (!sessionId || !userId) return
+    const session = await db.contractionSessions.get(sessionId)
+    if (!session || session.userId !== userId) return
+
     const completed = contractionsList.filter(c => c.endedAt !== null)
     const durations = completed.map(c => c.duration!).filter(Boolean)
     const intervals = completed.map(c => c.interval).filter((v): v is number => v !== null && v > 0)
@@ -66,7 +81,7 @@ export default function ContractionSession() {
       avgInterval: intervals.length > 0 ? intervals.reduce((a, b) => a + b, 0) / intervals.length : null,
       alertTriggered: alert,
     })
-  }, [sessionId])
+  }, [sessionId, userId])
 
   // Check 5-1-1 rule
   const check511Rule = useCallback((contractionsList: Contraction[]): boolean => {
@@ -92,7 +107,7 @@ export default function ContractionSession() {
   }, [])
 
   async function handleStartContraction() {
-    if (!sessionId) return
+    if (!sessionId || !userId) return
     triggerHaptic('heavy')
     const now = Date.now()
     setActive(true)
@@ -104,6 +119,7 @@ export default function ContractionSession() {
 
     const newContraction: Contraction = {
       id: crypto.randomUUID(),
+      userId,
       sessionId,
       startedAt: now,
       endedAt: null,
@@ -150,11 +166,14 @@ export default function ContractionSession() {
   }
 
   async function handleEndSession() {
-    if (!sessionId) return
+    if (!sessionId || !userId) return
     // If currently timing, end it first
     if (active && currentStart) {
       await handleEndContraction()
     }
+    const session = await db.contractionSessions.get(sessionId)
+    if (!session || session.userId !== userId) return
+
     await db.contractionSessions.update(sessionId, {
       endedAt: Date.now(),
     })

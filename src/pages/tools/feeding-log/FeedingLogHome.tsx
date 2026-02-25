@@ -15,21 +15,28 @@ import {
   formatTimeSinceLastFeed,
   getTodaySummary,
 } from '../../../lib/feeding-helpers.ts'
+import { useCurrentUserId } from '../../../lib/data-scope.ts'
 
 export default function FeedingLogHome() {
   const navigate = useNavigate()
   const [records, setRecords] = useState<FeedingRecord[]>([])
   const [showBreastPicker, setShowBreastPicker] = useState(false)
   const [showPumpPicker, setShowPumpPicker] = useState(false)
-
-  useEffect(() => {
-    loadRecords()
-  }, [])
+  const userId = useCurrentUserId()
 
   async function loadRecords() {
-    const all = await db.feedingRecords.orderBy('startedAt').reverse().toArray()
+    if (!userId) {
+      setRecords([])
+      return
+    }
+    const all = await db.feedingRecords.where('userId').equals(userId).toArray()
+    all.sort((a, b) => b.startedAt - a.startedAt)
     setRecords(all)
   }
+
+  useEffect(() => {
+    void loadRecords()
+  }, [userId])
 
   const activeRecord = records.find(r => r.endedAt === null && r.type !== 'bottle')
   const todayRecords = records.filter(r => isSameDay(r.startedAt, Date.now()))
@@ -40,10 +47,12 @@ export default function FeedingLogHome() {
   const suggestedPump = suggestPumpSide(records)
 
   function startBreastFeeding(side: FeedingType) {
+    if (!userId) return
     setShowBreastPicker(false)
     const id = crypto.randomUUID()
     const record: FeedingRecord = {
       id,
+      userId,
       type: side,
       startedAt: Date.now(),
       endedAt: null,
@@ -57,10 +66,12 @@ export default function FeedingLogHome() {
   }
 
   function startPumping(side: FeedingType) {
+    if (!userId) return
     setShowPumpPicker(false)
     const id = crypto.randomUUID()
     const record: FeedingRecord = {
       id,
+      userId,
       type: side,
       startedAt: Date.now(),
       endedAt: null,
