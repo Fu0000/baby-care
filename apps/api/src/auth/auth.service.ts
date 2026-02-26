@@ -23,6 +23,7 @@ export interface AuthUserView {
   phone: string
   nickname: string | null
   inviteBound: boolean
+  createdAt: string
 }
 
 export interface AuthTokens {
@@ -120,7 +121,29 @@ export class AuthService {
       phone: user.phone,
       nickname: user.nickname,
       inviteBound: user.inviteBound,
+      createdAt: user.createdAt.toISOString(),
     }
+  }
+
+  async updateProfile(
+    userId: string,
+    dto: { nickname?: string },
+  ): Promise<AuthUserView> {
+    if (dto.nickname === undefined) {
+      throw new BadRequestException('No updates')
+    }
+
+    const trimmed = dto.nickname.trim()
+    if (trimmed.length > 32) {
+      throw new BadRequestException('Nickname too long')
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { nickname: trimmed.length === 0 ? null : trimmed },
+    })
+
+    return this.getMe(userId)
   }
 
   private async createSessionForUser(userId: string): Promise<AuthResult> {

@@ -21,6 +21,7 @@ function mockLoggedInUser() {
         phone: '13800000000',
         nickname: '测试用户',
         inviteBound: true,
+        createdAt: '2026-02-01T00:00:00.000Z',
       },
     }),
   )

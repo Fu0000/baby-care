@@ -93,6 +93,26 @@ export async function fetchMe(): Promise<AuthUser> {
   return me;
 }
 
+export async function updateProfile(input: { nickname: string }): Promise<AuthUser> {
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error("No access token");
+  }
+
+  const user = await apiRequest<AuthUser>("/v1/auth/profile", {
+    method: "PATCH",
+    accessToken: token,
+    body: input,
+  });
+
+  const session = getAuthSession();
+  if (session) {
+    saveAuthSession({ ...session, user });
+  }
+
+  return user;
+}
+
 export async function bindInviteCode(code: string): Promise<void> {
   const token = getAccessToken();
   if (!token) {

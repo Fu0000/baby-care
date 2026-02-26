@@ -33,3 +33,10 @@ export class RefreshTokenDto {
   @IsString()
   refreshToken!: string
 }
+
+export class UpdateProfileDto {
+  @IsString()
+  @IsOptional()
+  @MaxLength(32)
+  nickname?: string
+}

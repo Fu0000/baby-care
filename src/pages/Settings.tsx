@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
@@ -20,8 +20,15 @@ import {
   type UserStage,
 } from "../lib/settings.ts";
 import { db } from "../lib/db.ts";
-import { getAuthSession, logout } from "../lib/auth.ts";
+import {
+  AUTH_SESSION_CHANGED_EVENT,
+  fetchMe,
+  getAuthSession,
+  logout,
+  updateProfile,
+} from "../lib/auth.ts";
 import { useCurrentUserId } from "../lib/data-scope.ts";
+import { ensurePracticeStartedAt, getPracticeDayNumber } from "../lib/practice.ts";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -29,9 +36,40 @@ export default function Settings() {
   const [exportDone, setExportDone] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [checking, setChecking] = useState(false);
-  const session = getAuthSession();
+  const [session, setSession] = useState(() => getAuthSession());
+  const [nicknameEditorOpen, setNicknameEditorOpen] = useState(false);
+  const [nicknameDraft, setNicknameDraft] = useState("");
+  const [savingNickname, setSavingNickname] = useState(false);
   const userId = useCurrentUserId();
   const defaultClassNames = getDefaultClassNames();
+
+  useEffect(() => {
+    function handleAuthChanged() {
+      setSession(getAuthSession());
+    }
+
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, handleAuthChanged);
+    return () => {
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, handleAuthChanged);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!session?.accessToken) return;
+    void fetchMe().catch(() => {
+      // ignore: settings page will still work with local session snapshot
+    });
+  }, [session?.accessToken]);
+
+  const practiceDayLabel = useMemo(() => {
+    if (!session?.user) return null;
+    const startedAt = ensurePracticeStartedAt(
+      session.user.id,
+      session.user.createdAt,
+    );
+    const dayNumber = getPracticeDayNumber(startedAt);
+    return `科学实践第 ${dayNumber} 天`;
+  }, [session?.user]);
 
   const {
     needRefresh: [needRefresh],
@@ -199,6 +237,31 @@ export default function Settings() {
     navigate("/auth/login", { replace: true });
   }
 
+  async function handleSaveNickname() {
+    if (!session?.accessToken) {
+      sileo.error({ title: "请先登录" });
+      return;
+    }
+
+    const trimmed = nicknameDraft.trim();
+    if (trimmed.length > 32) {
+      sileo.error({ title: "昵称过长", description: "最多 32 个字符" });
+      return;
+    }
+
+    setSavingNickname(true);
+    try {
+      await updateProfile({ nickname: trimmed });
+      sileo.success({ title: "已更新昵称" });
+      setNicknameEditorOpen(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "更新失败";
+      sileo.error({ title: "更新失败", description: message });
+    } finally {
+      setSavingNickname(false);
+    }
+  }
+
   return (
     <div className="max-w-lg mx-auto pb-4">
       <StickyHeader>
@@ -212,10 +275,45 @@ export default function Settings() {
         </p>
         <div className="space-y-3 mb-8">
           <div className="bg-white dark:bg-[#16213e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/60">
-            <p className="text-sm font-bold text-gray-800 dark:text-white">当前账号</p>
-            <p className="text-xs text-gray-400 mt-1">
-              {session?.user.phone ?? "未登录"}
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-gray-800 dark:text-white">
+                  昵称
+                </p>
+                <p className="text-xs text-gray-400 mt-1 truncate">
+                  {session?.user.nickname?.trim() || "未设置昵称"}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setNicknameDraft(session?.user.nickname ?? "");
+                  setNicknameEditorOpen(true);
+                }}
+                className="shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs font-bold text-gray-600 dark:text-gray-300 active:scale-95 transition-transform"
+              >
+                修改
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800 px-3 py-3">
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                  手机号
+                </p>
+                <p className="text-sm font-extrabold text-gray-800 dark:text-white mt-1">
+                  {session?.user.phone ?? "-"}
+                </p>
+              </div>
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800 px-3 py-3">
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                  使用时间
+                </p>
+                <p className="text-sm font-extrabold text-gray-800 dark:text-white mt-1">
+                  {practiceDayLabel ?? "-"}
+                </p>
+              </div>
+            </div>
+
             <div className="mt-4">
               <button
                 onClick={handleLogout}
@@ -226,6 +324,45 @@ export default function Settings() {
             </div>
           </div>
         </div>
+
+        <Dialog.Root
+          open={nicknameEditorOpen}
+          onOpenChange={(open) => setNicknameEditorOpen(open)}
+        >
+          <Dialog.Portal>
+            <Dialog.Backdrop className="fixed inset-0 bg-black/40 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+            <BottomSheetDialog title="修改昵称" className="px-5">
+              <p className="text-xs text-gray-400 mb-3">
+                支持留空，留空将清除昵称。
+              </p>
+              <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-800 px-4 py-3">
+                <input
+                  value={nicknameDraft}
+                  onChange={(e) => setNicknameDraft(e.target.value)}
+                  placeholder="输入昵称（最多 32 字）"
+                  className="w-full bg-transparent outline-none text-sm font-bold text-gray-800 dark:text-white placeholder:text-gray-400"
+                />
+              </div>
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  onClick={() => setNicknameEditorOpen(false)}
+                  className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm rounded-xl transition-colors cursor-pointer active:scale-[0.98] transition-transform"
+                  disabled={savingNickname}
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleSaveNickname}
+                  className="flex-1 py-3 bg-duo-green text-white font-bold text-sm rounded-xl active:scale-[0.98] transition-transform disabled:opacity-60"
+                  disabled={savingNickname}
+                >
+                  {savingNickname ? "保存中…" : "保存"}
+                </button>
+              </div>
+            </BottomSheetDialog>
+          </Dialog.Portal>
+        </Dialog.Root>
 
         {/* Kick Settings Section */}
         <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">

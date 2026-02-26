@@ -282,6 +282,12 @@ export default function History() {
               <div className="text-5xl mb-4">📝</div>
               <p className="text-gray-400 dark:text-gray-500 font-bold">还没有胎动记录</p>
               <p className="text-sm text-gray-400 dark:text-gray-600 mt-1">开始第一次数胎动吧！</p>
+              <button
+                onClick={() => navigate('/tools/kick-counter')}
+                className="mt-6 rounded-xl bg-duo-green text-white px-5 py-3 text-sm font-extrabold active:scale-[0.97] transition-transform"
+              >
+                去记录胎动
+              </button>
             </div>
           ) : (
             <>
@@ -474,6 +480,12 @@ export default function History() {
               <div className="text-5xl mb-4">📝</div>
               <p className="text-gray-400 dark:text-gray-500 font-bold">还没有宫缩记录</p>
               <p className="text-sm text-gray-400 dark:text-gray-600 mt-1">开始第一次宫缩计时吧！</p>
+              <button
+                onClick={() => navigate('/tools/contraction-timer')}
+                className="mt-6 rounded-xl bg-duo-orange text-white px-5 py-3 text-sm font-extrabold active:scale-[0.97] transition-transform"
+              >
+                去记录宫缩
+              </button>
             </div>
           ) : (
             <>
@@ -605,6 +617,12 @@ export default function History() {
               <div className="text-5xl mb-4">📝</div>
               <p className="text-gray-400 dark:text-gray-500 font-bold">还没有喂奶记录</p>
               <p className="text-sm text-gray-400 dark:text-gray-600 mt-1">开始第一次喂奶记录吧！</p>
+              <button
+                onClick={() => navigate('/tools/feeding-log')}
+                className="mt-6 rounded-xl bg-duo-purple text-white px-5 py-3 text-sm font-extrabold active:scale-[0.97] transition-transform"
+              >
+                去记录喂奶
+              </button>
             </div>
           ) : (
             <>

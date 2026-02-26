@@ -5,6 +5,7 @@ import { Toaster } from "sileo";
 const Home = lazy(() => import("./pages/Home.tsx"));
 const History = lazy(() => import("./pages/History.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
+const Tools = lazy(() => import("./pages/Tools.tsx"));
 const Layout = lazy(() => import("./components/Layout.tsx"));
 const KickHome = lazy(() => import("./pages/tools/kick-counter/KickHome.tsx"));
 const KickSession = lazy(
@@ -73,6 +74,7 @@ export default function App() {
           <Route element={<RequireAuth />}>
             <Route element={<Layout />}>
               <Route path="/history" element={<History />} />
+              <Route path="/tools" element={<Tools />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/tools/kick-counter" element={<KickHome />} />
               <Route

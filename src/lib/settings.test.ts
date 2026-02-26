@@ -57,6 +57,7 @@ function setAuthUser(userId: string): void {
         phone: '13800000000',
         nickname: null,
         inviteBound: true,
+        createdAt: '2026-02-01T00:00:00.000Z',
       },
     }),
   )

@@ -88,6 +88,18 @@ if (!window.ResizeObserver) {
   })
 }
 
+if (!window.PointerEvent) {
+  Object.defineProperty(window, 'PointerEvent', {
+    writable: true,
+    // Good enough for Base UI's event checks in JSDOM.
+    value: window.MouseEvent,
+  })
+  Object.defineProperty(globalThis, 'PointerEvent', {
+    writable: true,
+    value: window.MouseEvent,
+  })
+}
+
 if (!window.HTMLElement.prototype.scrollIntoView) {
   window.HTMLElement.prototype.scrollIntoView = vi.fn()
 }

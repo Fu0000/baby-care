@@ -29,6 +29,7 @@ export interface HomeDashboardSnapshot {
   todayFeeds: number
   todayContractions: number
   todayInteractions: number
+  todayInteractionSeconds: number
   lastFeedAt: number | null
   streak: number
   activeKickSession: KickSession | null
@@ -55,6 +56,7 @@ export async function getHomeDashboardSnapshot(
       todayFeeds: 0,
       todayContractions: 0,
       todayInteractions: 0,
+      todayInteractionSeconds: 0,
       lastFeedAt: null,
       streak: 0,
       activeKickSession: null,
@@ -89,7 +91,8 @@ export async function getHomeDashboardSnapshot(
   ])
 
   const todayKicks = sessionsToday.reduce((sum, session) => sum + session.kickCount, 0)
-  const todayInteractions = getParentChildDailyStats(userId, now).totalSessions
+  const interactionStats = getParentChildDailyStats(userId, now)
+  const todayInteractions = interactionStats.totalSessions
 
   return buildSnapshot({
     input,
@@ -97,6 +100,7 @@ export async function getHomeDashboardSnapshot(
     todayFeeds: feedsToday.length,
     todayContractions: contractionsToday.length,
     todayInteractions,
+    todayInteractionSeconds: interactionStats.totalDurationSeconds,
     lastFeedAt: latestFeeds[0]?.startedAt ?? null,
     streak: getKickStreakDays(sessionsForStreak, now),
     activeKickSession,
@@ -112,6 +116,7 @@ export function createEmptyHomeDashboardSnapshot(
     todayFeeds: 0,
     todayContractions: 0,
     todayInteractions: 0,
+    todayInteractionSeconds: 0,
     lastFeedAt: null,
     streak: 0,
     activeKickSession: null,
@@ -181,6 +186,7 @@ function buildSnapshot(input: {
   todayFeeds: number
   todayContractions: number
   todayInteractions: number
+  todayInteractionSeconds: number
   lastFeedAt: number | null
   streak: number
   activeKickSession: KickSession | null
@@ -202,6 +208,7 @@ function buildSnapshot(input: {
     todayFeeds: input.todayFeeds,
     todayContractions: input.todayContractions,
     todayInteractions: input.todayInteractions,
+    todayInteractionSeconds: input.todayInteractionSeconds,
     lastFeedAt: input.lastFeedAt,
     streak: input.streak,
     activeKickSession: input.activeKickSession,

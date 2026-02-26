@@ -5,6 +5,7 @@ import OngoingSessionBanner from '../components/home/OngoingSessionBanner.tsx'
 import QuickRecordGrid from '../components/home/QuickRecordGrid.tsx'
 import SecondaryInsightsPanel from '../components/home/SecondaryInsightsPanel.tsx'
 import StageProgressBar from '../components/home/StageProgressBar.tsx'
+import TodayInteractionCard from '../components/home/TodayInteractionCard.tsx'
 import TodayStatsCard from '../components/home/TodayStatsCard.tsx'
 import {
   createEmptyHomeDashboardSnapshot,
@@ -16,7 +17,7 @@ import { getDaysUntilDue, getSettings, getWeeksPregnant, type UserStage } from '
 import { hasInviteAccess } from '../lib/auth.ts'
 import { useCurrentUserId } from '../lib/data-scope.ts'
 import { getDailyRhythmCard, getJourneyCard, getKickSafetyNotice } from '../lib/journey.ts'
-import { getGroupedEntryTools, getEntryTools, type ToolCard } from '../lib/tools.tsx'
+import { getEntryTools, type ToolCard } from '../lib/tools.tsx'
 import { trackToolOpen } from '../lib/tool-usage.ts'
 import { getReminderConfig } from '../lib/reminders.ts'
 
@@ -61,7 +62,6 @@ export default function Home() {
   const daysUntilDue = getDaysUntilDue()
   const weeksPregnant = getWeeksPregnant()
   const [currentHour] = useState<number>(() => new Date().getHours())
-  const [showAllTools, setShowAllTools] = useState(false)
   const [insightsCollapsed, setInsightsCollapsed] = useState<boolean>(
     () => getHomeLayoutPrefs().secondaryInsightsCollapsed,
   )
@@ -98,7 +98,6 @@ export default function Home() {
     daysUntilDue,
   }
   const quickTools = getEntryTools(adaptiveContext, { limit: 4, includeRecent: true })
-  const groupedTools = getGroupedEntryTools(adaptiveContext, { includeRecent: false }).groups
 
   const journey = getJourneyCard(weeksPregnant, daysUntilDue, settings.userStage)
   const rhythm = getDailyRhythmCard(settings.userStage, currentHour)
@@ -112,6 +111,7 @@ export default function Home() {
   })
 
   const hasAccess = hasInviteAccess()
+  const activeKickSession = dashboard.activeKickSession
 
   useEffect(() => {
     let cancelled = false
@@ -198,17 +198,23 @@ export default function Home() {
           onOpenCompletion={() => gotoProtected('/history')}
         />
 
-        {dashboard.activeKickSession && (
+        {activeKickSession && (
           <OngoingSessionBanner
-            session={dashboard.activeKickSession}
+            session={activeKickSession}
             onContinue={() =>
               gotoProtected(
-                '/tools/kick-counter/session/' + dashboard.activeKickSession.id,
+                '/tools/kick-counter/session/' + activeKickSession.id,
                 'kick-counter',
               )
             }
           />
         )}
+
+        <TodayInteractionCard
+          sessions={dashboard.todayInteractions}
+          seconds={dashboard.todayInteractionSeconds}
+          onStart={() => gotoProtected('/tools/parent-child-play', 'parent-child-play')}
+        />
 
         <div>
           <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
@@ -217,51 +223,24 @@ export default function Home() {
           <QuickRecordGrid tools={quickTools} onOpenTool={openTool} />
         </div>
 
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-[#16213e] p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-[#16213e] p-4 flex items-center justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-              全部工具
+              工具
             </p>
-            <button
-              onClick={() => setShowAllTools((previous) => !previous)}
-              className="text-xs font-bold text-duo-blue"
-            >
-              {showAllTools ? '收起 ↑' : '查看全部 ↓'}
-            </button>
+            <p className="text-sm font-extrabold text-gray-800 dark:text-white mt-1">
+              查看全部工具
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              按场景浏览工具，并查看最近使用。
+            </p>
           </div>
-
-          {!showAllTools ? (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              常用入口已在上方展示。可点击“查看全部”按场景选择工具。
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {groupedTools.map((group) => (
-                <div key={group.id}>
-                  <p className="text-xs font-extrabold text-gray-700 dark:text-gray-200">
-                    {group.title}
-                  </p>
-                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                    {group.description}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {group.tools.map((tool) => (
-                      <button
-                        key={tool.id}
-                        onClick={() => openTool(tool)}
-                        className="rounded-xl border border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left active:scale-[0.98] transition-transform"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="shrink-0">{tool.icon}</div>
-                          <p className="text-sm font-bold text-gray-800 dark:text-white">{tool.title}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <button
+            onClick={() => gotoProtected('/tools')}
+            className="shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-xs font-extrabold text-gray-700 dark:text-gray-200 active:scale-[0.97] transition-transform"
+          >
+            打开
+          </button>
         </div>
 
         <SecondaryInsightsPanel
