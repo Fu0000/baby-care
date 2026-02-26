@@ -42,9 +42,6 @@ const Onboarding = lazy(() => import("./pages/onboarding/Onboarding.tsx"));
 const Login = lazy(() => import("./pages/auth/Login.tsx"));
 const Register = lazy(() => import("./pages/auth/Register.tsx"));
 const InviteBind = lazy(() => import("./pages/invite/InviteBind.tsx"));
-const AgentationDev = lazy(() =>
-  import("agentation").then((module) => ({ default: module.Agentation })),
-);
 
 function RouteLoading() {
   return (
@@ -57,17 +54,9 @@ function RouteLoading() {
 }
 
 export default function App() {
-  const enableAgentation =
-    import.meta.env.DEV && import.meta.env.VITE_DISABLE_AGENTATION !== "1";
-
   return (
     <>
       <Toaster position="top-center" options={{ fill: "var(--sileo-fill)" }} />
-      {enableAgentation && (
-        <Suspense fallback={null}>
-          <AgentationDev />
-        </Suspense>
-      )}
       <Suspense fallback={<RouteLoading />}>
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
