@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Checkbox } from '@base-ui/react/checkbox'
 import { Collapsible } from '@base-ui/react/collapsible'
@@ -10,6 +10,10 @@ import { db, type HospitalBagItem } from '../../../lib/db.ts'
 import { CATEGORIES, PRESET_ITEMS, type BagCategory } from '../../../lib/hospital-bag-presets.ts'
 import { triggerHaptic } from '../../../lib/haptics.ts'
 import { useCurrentUserId } from '../../../lib/data-scope.ts'
+
+function nowMs(): number {
+  return Date.now()
+}
 
 function CheckIcon(props: React.ComponentProps<'svg'>) {
   return (
@@ -27,25 +31,8 @@ export default function HospitalBagHome() {
   const celebratedRef = useRef(false)
   const userId = useCurrentUserId()
 
-  async function initItems() {
-    if (!userId) {
-      setItems([])
-      return
-    }
-    const count = await db.hospitalBagItems.where('userId').equals(userId).count()
-    if (count === 0) {
-      await seedPresets(userId)
-    }
-    const all = await db.hospitalBagItems.where('userId').equals(userId).toArray()
-    all.sort((a, b) => a.sortOrder - b.sortOrder)
-    setItems(all)
-  }
-
-  useEffect(() => {
-    void initItems()
-  }, [userId])
-
-  async function seedPresets(ownerId: string) {
+  const seedPresets = useCallback(async (ownerId: string) => {
+    const createdAt = nowMs()
     const records: HospitalBagItem[] = PRESET_ITEMS.map((item, i) => ({
       id: crypto.randomUUID(),
       userId: ownerId,
@@ -54,10 +41,39 @@ export default function HospitalBagHome() {
       checked: false,
       isCustom: false,
       sortOrder: i,
-      createdAt: Date.now(),
+      createdAt,
     }))
     await db.hospitalBagItems.bulkAdd(records)
-  }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const scopeUserId = userId
+
+    Promise.resolve()
+      .then(async () => {
+        if (!scopeUserId) return { kind: 'empty' } as const
+
+        const count = await db.hospitalBagItems.where('userId').equals(scopeUserId).count()
+        if (count === 0) await seedPresets(scopeUserId)
+
+        const all = await db.hospitalBagItems.where('userId').equals(scopeUserId).toArray()
+        all.sort((a, b) => a.sortOrder - b.sortOrder)
+        return { kind: 'items', items: all } as const
+      })
+      .then((result) => {
+        if (cancelled) return
+        if (result.kind === 'empty') {
+          setItems([])
+        } else {
+          setItems(result.items)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [seedPresets, userId])
 
   const total = items.length
   const checked = items.filter(i => i.checked).length
@@ -99,7 +115,7 @@ export default function HospitalBagHome() {
       checked: false,
       isCustom: true,
       sortOrder: maxSort + 1,
-      createdAt: Date.now(),
+      createdAt: nowMs(),
     }
     await db.hospitalBagItems.add(newItem)
     setItems(prev => [...prev, newItem])

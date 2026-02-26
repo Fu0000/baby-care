@@ -28,7 +28,7 @@ export default function ContractionSession() {
   const [contractions, setContractions] = useState<Contraction[]>([])
   const [active, setActive] = useState(false) // is a contraction happening right now?
   const [currentStart, setCurrentStart] = useState<number | null>(null)
-  const [elapsed, setElapsed] = useState(0)
+  const [nowMs, setNowMs] = useState(() => Date.now())
   const [showAlert, setShowAlert] = useState(false)
   const [alertTriggered, setAlertTriggered] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined)
@@ -55,16 +55,14 @@ export default function ContractionSession() {
 
   // Live timer for active contraction
   useEffect(() => {
-    if (active && currentStart) {
-      timerRef.current = setInterval(() => {
-        setElapsed(Date.now() - currentStart)
-      }, 100)
-    } else {
-      clearInterval(timerRef.current)
-      setElapsed(0)
-    }
+    if (!active || !currentStart) return
+    timerRef.current = setInterval(() => {
+      setNowMs(Date.now())
+    }, 100)
     return () => clearInterval(timerRef.current)
   }, [active, currentStart])
+
+  const elapsed = active && currentStart ? Math.max(0, nowMs - currentStart) : 0
 
   const updateSessionSummary = useCallback(async (contractionsList: Contraction[], alert: boolean) => {
     if (!sessionId || !userId) return

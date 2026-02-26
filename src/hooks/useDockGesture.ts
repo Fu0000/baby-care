@@ -83,7 +83,9 @@ export function useDockGesture(
 
   // Stable ref for focusedIndex to avoid stale closures
   const focusedIndexRef = useRef<number | null>(null)
-  focusedIndexRef.current = focusedIndex
+  useEffect(() => {
+    focusedIndexRef.current = focusedIndex
+  }, [focusedIndex])
 
   const reset = useCallback(() => {
     const nav = navRef.current

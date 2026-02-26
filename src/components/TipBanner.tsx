@@ -1,17 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { getRandomTip } from '../lib/tips.ts'
 
 export default function TipBanner() {
-  const [tip, setTip] = useState('')
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    // 50% chance to show a tip
-    if (Math.random() < 0.5) {
-      setTip(getRandomTip())
-      setVisible(true)
-    }
-  }, [])
+  const [{ tip, visible }, setState] = useState(() => {
+    const show = Math.random() < 0.5
+    return { tip: show ? getRandomTip() : '', visible: show }
+  })
 
   if (!visible) return null
 
@@ -24,7 +18,7 @@ export default function TipBanner() {
           <p className="text-xs text-gray-500 dark:text-gray-400">{tip}</p>
         </div>
         <button
-          onClick={() => setVisible(false)}
+          onClick={() => setState((prev) => ({ ...prev, visible: false }))}
           className="shrink-0 text-gray-400 hover:text-gray-600 ml-auto"
         >
           ✕

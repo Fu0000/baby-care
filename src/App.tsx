@@ -32,6 +32,9 @@ const BottleEntry = lazy(
 const ParentChildPlay = lazy(
   () => import("./pages/tools/parent-child-play/ParentChildPlay.tsx"),
 );
+const ParentChildPlayGame = lazy(
+  () => import("./pages/tools/parent-child-play/ParentChildPlayGame.tsx"),
+);
 const ReminderCenter = lazy(
   () => import("./pages/tools/reminders/ReminderCenter.tsx"),
 );
@@ -87,6 +90,10 @@ export default function App() {
               <Route
                 path="/tools/parent-child-play"
                 element={<ParentChildPlay />}
+              />
+              <Route
+                path="/tools/parent-child-play/game/:mode"
+                element={<ParentChildPlayGame />}
               />
             </Route>
             <Route
